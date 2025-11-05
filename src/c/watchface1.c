@@ -149,15 +149,15 @@ static void prv_format_and_update_weather() {
   // Read live BT state to avoid stale values
   bool live_bt = bluetooth_connection_service_peek();
   APP_LOG(APP_LOG_LEVEL_INFO, "BT peek=%d s_bt_connected=%d", (int)live_bt, (int)s_bt_connected);
-  if (!live_bt) {
-    strncpy(s_status_buf, "BT Disconnected", sizeof(s_status_buf));
+  if (s_battery_level >= 0 && s_battery_level < 20) {
+    snprintf(s_status_buf, sizeof(s_status_buf), "Battery: %d%%", s_battery_level);
+    text_layer_set_text(s_status_layer, s_status_buf);
+  } else if (!live_bt) {
+    strncpy(s_status_buf, "BT Disconnect", sizeof(s_status_buf));
     s_status_buf[sizeof(s_status_buf)-1] = '\0';
     text_layer_set_text(s_status_layer, s_status_buf);
-  } else if (s_battery_level >= 0 && s_battery_level < 20) {
-    snprintf(s_status_buf, sizeof(s_status_buf), "Low Battery: %d%%", s_battery_level);
-    text_layer_set_text(s_status_layer, s_status_buf);
   } else {
-    text_layer_set_text(s_status_layer, "Status OK");
+    text_layer_set_text(s_status_layer, "");
     text_layer_set_text_color(s_status_layer, s_dark_mode ? GColorWhite : GColorBlack);
   }
 }
@@ -398,10 +398,11 @@ static void prv_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
 
   // Move main time down to make room; keep large numeric font
-  s_time_layer = text_layer_create(GRect(0, 36, bounds.size.w, 40));
+  // Increased height to 60 to avoid clipping the bottom half of the digits.
+  s_time_layer = text_layer_create(GRect(0, 36, bounds.size.w, 60));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_LECO_42_NUMBERS));
+  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
@@ -463,8 +464,12 @@ static void prv_window_load(Window *window) {
   text_layer_set_text_alignment(s_sunset_layer, GTextAlignmentRight);
   layer_add_child(window_layer, text_layer_get_layer(s_sunset_layer));
 
-  // Status line just above sunrise/sunset
-  GRect status_frame = GRect(0, bounds.size.h - SUN_HEIGHT - STATUS_HEIGHT - BOTTOM_MARGIN - 2, bounds.size.w, STATUS_HEIGHT);
+  // Status line: place it on the same baseline as the sunrise/sunset
+  // and centered horizontally between them. Use the smaller sun font
+  // height so it doesn't overlap the sunrise/sunset texts.
+  const int STATUS_WIDTH = bounds.size.w / 2;
+  const int STATUS_X = bounds.size.w / 4;
+  GRect status_frame = GRect(STATUS_X, bounds.size.h - STATUS_HEIGHT - BOTTOM_MARGIN, STATUS_WIDTH, STATUS_HEIGHT);
   s_status_layer = text_layer_create(status_frame);
   text_layer_set_background_color(s_status_layer, GColorClear);
   text_layer_set_text_color(s_status_layer, s_dark_mode ? GColorWhite : GColorBlack);
