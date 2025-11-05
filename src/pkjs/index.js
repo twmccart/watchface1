@@ -54,6 +54,18 @@ function fetchWeather(coords) {
       var max = Math.round(data.main.temp_max);
       var sunrise = data.sys.sunrise; // UNIX UTC
       var sunset = data.sys.sunset;
+      // Determine a compact sky condition code for the watch:
+      // 0 = clear/sunny, 1 = clouds, 2 = rain/snow/precip
+      var skyCond = 0;
+      try {
+        var w = data.weather && data.weather[0] && (data.weather[0].main || data.weather[0].id);
+        if (w) {
+          var wm = (typeof w === 'string') ? w.toLowerCase() : '' + w;
+          if (wm.indexOf('cloud') !== -1) skyCond = 1;
+          else if (wm.indexOf('rain') !== -1 || wm.indexOf('snow') !== -1 || wm.indexOf('drizzle') !== -1 || wm.indexOf('thunder') !== -1) skyCond = 2;
+          else if (wm.indexOf('clear') !== -1) skyCond = 0;
+        }
+      } catch (e) { skyCond = 0; }
 
       // Use numeric message keys to avoid mapping issues at runtime.
       var payload = {};
@@ -63,6 +75,7 @@ function fetchWeather(coords) {
       payload[10003] = max;       // WEATHER_MAX
       payload[10004] = sunrise;   // SUNRISE
       payload[10005] = sunset;    // SUNSET
+      payload[10006] = skyCond;   // SKY_COND (compact code)
       sendMessage(payload);
     } catch (err) {
       console.log('Parse error: ' + err);
@@ -89,6 +102,8 @@ function fetchAndSend() {
     payload[10003] = 22;
     payload[10004] = now - 3600 * 6;
     payload[10005] = now + 3600 * 6;
+    // Include a test sky condition (0=clear)
+    payload[10006] = 0;
     sendMessage(payload);
     return;
   }
@@ -113,6 +128,8 @@ Pebble.addEventListener('ready', function() {
     payload[10003] = 22;
     payload[10004] = now - 3600 * 6;
     payload[10005] = now + 3600 * 6;
+    // Include a test sky condition (0 = clear)
+    payload[10006] = 0;
     sendMessage(payload);
     return;
   }
@@ -134,6 +151,19 @@ Pebble.addEventListener('ready', function() {
   } else {
     console.log('No geolocation available and no fixed coords; initial fetch skipped');
   }
+
+  // On ready, also send current DARK_MODE setting if available from localStorage
+  try {
+    var dark = localStorage.getItem('dark_mode');
+    if (dark !== null) {
+      var dm = (dark === '1') ? 1 : 0;
+      var payload = {};
+      payload[10009] = dm; // DARK_MODE numeric key (10009)
+      sendMessage(payload);
+    }
+  } catch (e) {
+    console.log('No localStorage or error reading dark_mode: ' + e);
+  }
 });
 
 Pebble.addEventListener('appmessage', function(e) {
@@ -142,5 +172,51 @@ Pebble.addEventListener('appmessage', function(e) {
   // Some messages may use numeric keys (e.g., 100) to request a refresh
   if (e.payload && (e.payload.REQUEST_WEATHER || e.payload['100'])) {
     fetchAndSend();
+  }
+});
+
+// Settings: show a tiny HTML page (data URL) with a checkbox for dark mode
+Pebble.addEventListener('showConfiguration', function() {
+  try {
+    var cur = localStorage.getItem('dark_mode') || '1';
+    var checked = (cur === '1') ? 'checked' : '';
+    var html = '' +
+      '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">' +
+      '<style>body{font-family:sans-serif;padding:16px;} label{display:block;margin:12px 0;}</style>' +
+      '</head><body>' +
+      '<h3>watchface1 Settings</h3>' +
+      '<label><input id="dark" type="checkbox" ' + checked + '> Dark mode (black background, white text)</label>' +
+      '<button id="save">Save</button>' +
+      '<script>' +
+      'document.getElementById("save").addEventListener("click", function(){' +
+      'var d = document.getElementById("dark").checked ? "1" : "0";' +
+      'var result = { D: d };' +
+      'var uri = "pebblejs://close#" + encodeURIComponent(JSON.stringify(result));' +
+      'window.location = uri;' +
+      '});' +
+      '</script></body></html>';
+    var url = 'data:text/html;base64,' + btoa(html);
+    Pebble.openURL(url);
+  } catch (e) {
+    console.log('Failed to open config: ' + e);
+  }
+});
+
+Pebble.addEventListener('webviewclosed', function(e) {
+  // e.response is the string after the # in the URL
+  if (!e || !e.response) return;
+  try {
+    var data = JSON.parse(decodeURIComponent(e.response));
+    if (data && data.D !== undefined) {
+      var dm = (data.D === '1' || data.D === 1) ? 1 : 0;
+      // Persist locally
+      try { localStorage.setItem('dark_mode', dm ? '1' : '0'); } catch (ex) { }
+      // Send to watch using the DARK_MODE message key numeric mapping
+      var payload = {};
+  payload[10009] = dm; // DARK_MODE numeric key
+      sendMessage(payload);
+    }
+  } catch (err) {
+    console.log('Config parse error: ' + err);
   }
 });
