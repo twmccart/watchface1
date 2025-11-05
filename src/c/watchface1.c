@@ -29,9 +29,10 @@ static void prv_request_weather(void);
 
 static Window *s_window;
 static TextLayer *s_time_layer, *s_date_layer;
-static TextLayer *s_temp_layer, *s_hum_layer, *s_minmax_layer, *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
+static TextLayer *s_temperature_layer, *s_humidity_layer, *s_minmax_layer, *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
 static Layer *s_sky_layer;
 static bool s_sky_test_all = false; // when true, draw all three icons for testing
+static GFont s_leco_font = NULL;
 
 // State
 static int s_temp = 0;
@@ -100,21 +101,10 @@ static void prv_format_and_update_weather() {
   // Weather line
   // Show compact temperature and humidity near the top-left icon (no labels)
   snprintf(s_temp_buf, sizeof(s_temp_buf), "%d°C", s_temp);
-  text_layer_set_text(s_temp_layer, s_temp_buf);
+  text_layer_set_text(s_temperature_layer, s_temp_buf);
   snprintf(s_hum_buf, sizeof(s_hum_buf), "%d%%", s_humidity);
-  text_layer_set_text(s_hum_layer, s_hum_buf);
-  // Compute width of temp text and place humidity one space after it
-  GFont temp_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  GRect measure_box = GRect(0, 0, 128, 24);
-  GSize temp_size = graphics_text_layout_get_content_size(s_temp_buf, temp_font, measure_box, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
-  GSize space_size = graphics_text_layout_get_content_size(" ", temp_font, measure_box, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
-  // temp is positioned at x = 2 (sky_x) + 16 (ICON_SIZE) + 4 padding = 20
-  int hum_x = 24 + (int)(temp_size.w + space_size.w);
-  // Move humidity layer to calculated X
-  Layer *hum_layer = text_layer_get_layer(s_hum_layer);
-  GRect hum_frame = layer_get_frame(hum_layer);
-  hum_frame.origin.x = hum_x;
-  layer_set_frame(hum_layer, hum_frame);
+  text_layer_set_text(s_humidity_layer, s_hum_buf);
+  // Humidity is displayed centered at the top; no runtime reposition required.
 
   // Min/Max line
   // Show min/max compactly in upper-right as "min-max°"
@@ -382,6 +372,12 @@ static void prv_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
+  // Try to load a custom LECO font if present in resources. If not present
+  // the build won't define the RESOURCE_ID symbol and this block is skipped.
+#ifdef RESOURCE_ID_FONT_LECO_BOLD
+  s_leco_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_BOLD));
+#endif
+
   // Make the watchface background black
   if (s_dark_mode) {
     window_set_background_color(window, GColorBlack);
@@ -389,22 +385,31 @@ static void prv_window_load(Window *window) {
     window_set_background_color(window, GColorWhite);
   }
 
-  // Place date just above the time
-  s_date_layer = text_layer_create(GRect(0, 18, bounds.size.w, 20));
-  text_layer_set_background_color(s_date_layer, GColorClear);
-  text_layer_set_text_color(s_date_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
-  text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
-  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
-
-  // Move main time down to make room; keep large numeric font
-  // Increased height to 60 to avoid clipping the bottom half of the digits.
-  s_time_layer = text_layer_create(GRect(0, 36, bounds.size.w, 60));
+  // Positioning: center the main time on screen (vertically centered)
+  const int TIME_H = 60;
+  int time_y = (bounds.size.h - TIME_H) / 2;
+  s_time_layer = text_layer_create(GRect(0, time_y, bounds.size.w, TIME_H));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, s_dark_mode ? GColorWhite : GColorBlack);
   text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
+  // Center the time horizontally
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+
+  // Date above time: left-justified and using LECO if available, otherwise fallback
+  const int DATE_H = 28;
+  int date_y = time_y - DATE_H - 4;
+  // Make the date left-justified with full-width so text aligns to the left edge
+  s_date_layer = text_layer_create(GRect(0, date_y, bounds.size.w, DATE_H));
+  text_layer_set_background_color(s_date_layer, GColorClear);
+  text_layer_set_text_color(s_date_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  if (s_leco_font) {
+    text_layer_set_font(s_date_layer, s_leco_font);
+  } else {
+    text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  }
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
+  layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
 
   // Create a single small sky icon layer positioned in the upper-left corner
   const int ICON_SIZE = 16;
@@ -414,24 +419,28 @@ static void prv_window_load(Window *window) {
   layer_set_update_proc(s_sky_layer, sky_layer_update_proc);
   layer_add_child(window_layer, s_sky_layer);
 
-  // Place weather (temp & humidity) to the right of the sky icon (no labels)
+  // Place weather (temp & humidity). Temperature remains near the sky icon,
+  // but humidity will be displayed centered at the very top of the screen.
   const int sky_icon_right = sky_x + ICON_SIZE; // sky_x + ICON_SIZE from above
   int top_metric_y = -4; // same vertical alignment for weather metrics
-  // Temperature (bold 18) and humidity (regular) placed to the right of sky icon
+  // Temperature (bold 18) placed to the right of sky icon
   int temp_x = sky_icon_right + 2;
-  s_temp_layer = text_layer_create(GRect(temp_x, top_metric_y, 50, 20));
-  text_layer_set_background_color(s_temp_layer, GColorClear);
-  text_layer_set_text_color(s_temp_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  text_layer_set_font(s_temp_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-  text_layer_set_text_alignment(s_temp_layer, GTextAlignmentLeft);
-  layer_add_child(window_layer, text_layer_get_layer(s_temp_layer));
+  s_temperature_layer = text_layer_create(GRect(temp_x, top_metric_y, 50, 20));
+  text_layer_set_background_color(s_temperature_layer, GColorClear);
+  text_layer_set_text_color(s_temperature_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentLeft);
+  layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
 
-  s_hum_layer = text_layer_create(GRect(temp_x + 52, top_metric_y, 60, 20));
-  text_layer_set_background_color(s_hum_layer, GColorClear);
-  text_layer_set_text_color(s_hum_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  text_layer_set_font(s_hum_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
-  text_layer_set_text_alignment(s_hum_layer, GTextAlignmentLeft);
-  layer_add_child(window_layer, text_layer_get_layer(s_hum_layer));
+  // Humidity vertically aligned with temperature (same Y), but centered horizontally
+  int hum_w = 60;
+  int hum_x_center = (bounds.size.w - hum_w) / 2;
+  s_humidity_layer = text_layer_create(GRect(hum_x_center, top_metric_y, hum_w, 20));
+  text_layer_set_background_color(s_humidity_layer, GColorClear);
+  text_layer_set_text_color(s_humidity_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  text_layer_set_font(s_humidity_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_humidity_layer, GTextAlignmentCenter);
+  layer_add_child(window_layer, text_layer_get_layer(s_humidity_layer));
 
   // Place min/max in the upper-right corner, same vertical alignment and font
   s_minmax_layer = text_layer_create(GRect(bounds.size.w - 90, top_metric_y, 86, 20));
@@ -488,8 +497,8 @@ static void prv_window_load(Window *window) {
 static void prv_window_unload(Window *window) {
   text_layer_destroy(s_time_layer);
   text_layer_destroy(s_date_layer);
-  text_layer_destroy(s_temp_layer);
-  text_layer_destroy(s_hum_layer);
+  text_layer_destroy(s_temperature_layer);
+  text_layer_destroy(s_humidity_layer);
   text_layer_destroy(s_minmax_layer);
   layer_destroy(s_sky_layer);
   text_layer_destroy(s_sunrise_layer);
@@ -546,8 +555,8 @@ static void prv_set_dark_mode(bool enable) {
     // Reformat and update text colors/content
     if (s_date_layer) text_layer_set_text_color(s_date_layer, s_dark_mode ? GColorWhite : GColorBlack);
     if (s_time_layer) text_layer_set_text_color(s_time_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  if (s_temp_layer) text_layer_set_text_color(s_temp_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  if (s_hum_layer) text_layer_set_text_color(s_hum_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  if (s_temperature_layer) text_layer_set_text_color(s_temperature_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  if (s_humidity_layer) text_layer_set_text_color(s_humidity_layer, s_dark_mode ? GColorWhite : GColorBlack);
   if (s_minmax_layer) text_layer_set_text_color(s_minmax_layer, s_dark_mode ? GColorWhite : GColorBlack);
   if (s_sunrise_layer) text_layer_set_text_color(s_sunrise_layer, s_dark_mode ? GColorWhite : GColorBlack);
   if (s_sunset_layer) text_layer_set_text_color(s_sunset_layer, s_dark_mode ? GColorWhite : GColorBlack);
