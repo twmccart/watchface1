@@ -1,0 +1,39 @@
+{
+  "name": "watchface1",
+  "author": "Thomas",
+  "version": "0.1.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "watchface1",
+    "uuid": "cc3e35d1-c5bc-47d0-a539-7c2e0c155ae4",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery",
+      "flint"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "WEATHER_TEMP",        
+      "WEATHER_HUMIDITY",
+      "WEATHER_MIN",
+      "WEATHER_MAX",
+      "SUNRISE",
+      "SUNSET",
+      "BT_CONNECTED",
+      "BATTERY_LEVEL",
+      "DATE_STRING"
+    ],
+    "resources": {
+      "media": []
+    }
+  }
+}
