@@ -54,18 +54,17 @@ function fetchWeather(coords) {
       var max = Math.round(data.main.temp_max);
       var sunrise = data.sys.sunrise; // UNIX UTC
       var sunset = data.sys.sunset;
-      // Determine a compact sky condition code for the watch:
-      // 0 = clear/sunny, 1 = clouds, 2 = rain/snow/precip
-      var skyCond = 0;
-      try {
-        var w = data.weather && data.weather[0] && (data.weather[0].main || data.weather[0].id);
-        if (w) {
-          var wm = (typeof w === 'string') ? w.toLowerCase() : '' + w;
-          if (wm.indexOf('cloud') !== -1) skyCond = 1;
-          else if (wm.indexOf('rain') !== -1 || wm.indexOf('snow') !== -1 || wm.indexOf('drizzle') !== -1 || wm.indexOf('thunder') !== -1) skyCond = 2;
-          else if (wm.indexOf('clear') !== -1) skyCond = 0;
-        }
-      } catch (e) { skyCond = 0; }
+      // Safely extract the icon code from the OWM response. The JSON has
+      // data.weather as an array; take weather[0].icon when available.
+      var icon = (data.weather && data.weather[0] && data.weather[0].icon) ? data.weather[0].icon : null;
+      // Map of OWM icon -> WeatherIcons glyph. Only use this mapping; if the
+      // icon isn't present or not mapped, do not send a glyph.
+      var iconToGlyph = {
+        '01d': '', '02d': '', '03d': '', '04d': '', '09d': '', '10d': '', '11d': '', '13d': '', '50d': '',
+        '01n': '', '02n': '', '03n': '', '04n': '', '09n': '', '10n': '', '11n': '', '13n': '', '50n': ''
+      };
+      var skyGlyph = (icon && iconToGlyph[icon]) ? iconToGlyph[icon] : null;
+      var sendIconCode = icon ? icon : null;
 
       // Use numeric message keys to avoid mapping issues at runtime.
       var payload = {};
@@ -75,7 +74,12 @@ function fetchWeather(coords) {
       payload[10003] = max;       // WEATHER_MAX
       payload[10004] = sunrise;   // SUNRISE
       payload[10005] = sunset;    // SUNSET
-      payload[10006] = skyCond;   // SKY_COND (compact code)
+  // Send the sky glyph only if it was explicitly chosen from the OWM icon code.
+  if (skyGlyph) payload[10007] = skyGlyph; // SKY_GLYPH (matches appinfo mapping)
+  // Send the raw OWM icon code if available so the watch module can map it too.
+  if (typeof sendIconCode !== 'undefined' && sendIconCode) payload[10008] = sendIconCode; // SKY_ICON
+    // City name (if available)
+    if (data.name) payload[10011] = data.name;
       sendMessage(payload);
     } catch (err) {
       console.log('Parse error: ' + err);
@@ -102,8 +106,11 @@ function fetchAndSend() {
     payload[10003] = 22;
     payload[10004] = now - 3600 * 6;
     payload[10005] = now + 3600 * 6;
-    // Include a test sky condition (0=clear)
-    payload[10006] = 0;
+    // Include a test OWM icon code and its mapped glyph so the watch displays it
+    // in TEST_MODE (example: clear day -> '01d').
+  payload[10008] = '01d';
+  payload[10007] = '';
+  payload[10011] = "Testville";
     sendMessage(payload);
     return;
   }
@@ -128,8 +135,10 @@ Pebble.addEventListener('ready', function() {
     payload[10003] = 22;
     payload[10004] = now - 3600 * 6;
     payload[10005] = now + 3600 * 6;
-    // Include a test sky condition (0 = clear)
-    payload[10006] = 0;
+    // Include a test OWM icon code and glyph for ready/test mode as well.
+  payload[10008] = '01d';
+  payload[10007] = '';
+  payload[10011] = "Testville";
     sendMessage(payload);
     return;
   }

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 // message_keys.auto.h is generated at build time from package.json messageKeys
 #include "message_keys.auto.h"
+#include "weather.h"
 
 // If build didn't regenerate message_keys header for DARK_MODE yet, provide a
 // fallback numeric value matching appinfo.json (will be 10009 after package.json change).
@@ -24,15 +25,24 @@
 #define MESSAGE_KEY_SKY_COND 10006
 #endif
 
-// Forward declarations
-static void prv_request_weather(void);
+// Fallback for CITY message key (numeric mapping). Companion uses 10011.
+#ifndef MESSAGE_KEY_CITY
+#define MESSAGE_KEY_CITY 10011
+#endif
+
+static void prv_format_and_update_weather(void);
 
 static Window *s_window;
 static TextLayer *s_time_layer, *s_date_layer;
+static TextLayer *s_icon_test_layer;
+static TextLayer *s_icon_glyph_layer; // shows the WeatherIcons glyph next to the icon code
 static TextLayer *s_temperature_layer, *s_humidity_layer, *s_minmax_layer, *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
-static Layer *s_sky_layer;
+static TextLayer *s_sky_glyph_layer;
 static bool s_sky_test_all = false; // when true, draw all three icons for testing
-static GFont s_leco_font = NULL;
+static GFont s_date_font = NULL;
+static GFont s_time_font = NULL;
+static GFont s_icon_font = NULL;
+static GFont s_sky_font = NULL; // FONT_WEATHER_12 for the small sky glyph
 
 // State
 static int s_temp = 0;
@@ -43,19 +53,20 @@ static time_t s_sunrise = 0;
 static time_t s_sunset = 0;
 static bool s_bt_connected = true;
 static int s_battery_level = 100;
-static time_t s_last_weather_request = 0;
-// cooldown in seconds (10 minutes)
-static const int WEATHER_COOLDOWN = 10 * 60;
+// Note: weather request cooldown is managed inside the weather module.
 static bool s_prev_bt_connected = true;
 // Per-layer persistent text buffers (TextLayer stores the pointer)
-// static char s_weather_buf[64]; // no longer used; replaced by s_temp_buf and s_hum_buf
-static char s_temp_buf[32];
+// static char s_weather_buf[64]; // no longer used; replaced by s_temperature_buffer and s_hum_buf
+static char s_temperature_buffer[32];
 static char s_hum_buf[32];
 static char s_minmax_buf[64];
 static char s_sunrise_buf[32];
 static char s_sunset_buf[32];
 static char s_status_buf[32];
-static int s_sky_code = 0; // 0=sun,1=cloud,2=precip
+static char s_city_buf[32];
+static char s_sky_glyph_buf[8];
+static char s_icon_code_buf[8];
+// s_sky_code removed: glyphs provided by companion/module are used instead
 // Dark mode flag (user option to toggle later). true = black background, white text.
 static bool s_dark_mode = true;
 
@@ -97,11 +108,52 @@ static void prv_update_time() {
   text_layer_set_text(s_date_layer, date_buf);
 }
 
+/* Test trigger: Select button runs a sample weather payload */
+static void prv_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  weather_run_sample_test();
+}
+
+static void prv_click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_SELECT, prv_select_click_handler);
+}
+
+/* Callback from weather module when new data arrives */
+static void weather_module_cb(const weather_data_t *data, void *ctx) {
+  if (!data) return;
+  s_temp = data->temp;
+  s_humidity = data->humidity;
+  s_min = data->min;
+  s_max = data->max;
+  s_sunrise = data->sunrise;
+  s_sunset = data->sunset;
+  /* sky_code is no longer used; glyphs are provided by the weather module */
+  strncpy(s_city_buf, data->city, sizeof(s_city_buf));
+  s_city_buf[sizeof(s_city_buf)-1] = '\0';
+  // Copy glyph (may be UTF-8 multi-byte); weather module uses null-terminated
+  if (data->glyph && data->glyph[0]) {
+    strncpy(s_sky_glyph_buf, data->glyph, sizeof(s_sky_glyph_buf));
+    s_sky_glyph_buf[sizeof(s_sky_glyph_buf)-1] = '\0';
+  } else {
+    // If no glyph was provided, store a visible fallback glyph so the UI
+    // doesn't show an empty box. Use U+F0B1 () from the weather icon set
+    // or a placeholder character present in many fonts.
+      strncpy(s_sky_glyph_buf, "", sizeof(s_sky_glyph_buf));
+    s_sky_glyph_buf[sizeof(s_sky_glyph_buf)-1] = '\0';
+  }
+  // Copy raw OWM icon code string (like "01d") for display when present
+  if (data->icon_code && data->icon_code[0]) {
+    strncpy(s_icon_code_buf, data->icon_code, sizeof(s_icon_code_buf));
+    s_icon_code_buf[sizeof(s_icon_code_buf)-1] = '\0';
+  } else {
+    s_icon_code_buf[0] = '\0';
+  }
+  prv_format_and_update_weather();
+}
+
 static void prv_format_and_update_weather() {
   // Weather line
   // Show compact temperature and humidity near the top-left icon (no labels)
-  snprintf(s_temp_buf, sizeof(s_temp_buf), "%d°C", s_temp);
-  text_layer_set_text(s_temperature_layer, s_temp_buf);
+  
   snprintf(s_hum_buf, sizeof(s_hum_buf), "%d%%", s_humidity);
   text_layer_set_text(s_humidity_layer, s_hum_buf);
   // Humidity is displayed centered at the top; no runtime reposition required.
@@ -110,6 +162,98 @@ static void prv_format_and_update_weather() {
   // Show min/max compactly in upper-right as "min-max°"
   snprintf(s_minmax_buf, sizeof(s_minmax_buf), "%d-%d°", s_min, s_max);
   text_layer_set_text(s_minmax_layer, s_minmax_buf);
+
+  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "%d°C", s_temp);
+  text_layer_set_text(s_temperature_layer, s_temperature_buffer);
+  // Make the central sky+temp group responsive to text width: measure temp
+  if (s_window && s_temperature_layer) {
+  // Get screen bounds and glyph icon frame
+  GRect bounds = layer_get_bounds(window_get_root_layer(s_window));
+  GRect sky_frame = layer_get_frame(text_layer_get_layer(s_sky_glyph_layer));
+  int ICON_SIZE = sky_frame.size.w;
+    const int GAP = 4;
+    // Measure temp text width using the same font used by the layer
+    GFont temp_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+    GSize measured = graphics_text_layout_get_content_size(s_temperature_buffer, temp_font, GRect(0, 0, bounds.size.w, 20), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
+    int temperature_width = measured.w;
+    // Cap to available space to avoid overlapping edges
+    int max_temp_w = bounds.size.w - ICON_SIZE - GAP - 8; // small margin
+    if (temperature_width > max_temp_w) temperature_width = max_temp_w;
+    // Compute centered group left position inside the gap between humidity and min/max
+    // Measure actual frames for humidity and minmax so this works if their widths change
+    GRect hum_frame = layer_get_frame(text_layer_get_layer(s_humidity_layer));
+    GRect minmax_frame = layer_get_frame(text_layer_get_layer(s_minmax_layer));
+    int hum_right = hum_frame.origin.x + hum_frame.size.w;
+    int minmax_left = minmax_frame.origin.x;
+
+    // Combined width: icon + gap + temperature width
+    int combined_w = ICON_SIZE + GAP + temperature_width;
+    // Preserve temperature Y (it may be intentionally offset) and keep sky at top (y=0)
+    GRect temp_frame_before = layer_get_frame(text_layer_get_layer(s_temperature_layer));
+    int temp_y = temp_frame_before.origin.y;
+    const int SKY_Y = 0;
+    // Cap combined width to available space (leave a small gutter)
+    int available_w = minmax_left - hum_right;
+    int gutter = 0;
+    if (available_w <= gutter * 2) {
+      // Not enough space, fallback to screen center using combined_w capped to screen
+      if (combined_w > bounds.size.w - 16) combined_w = bounds.size.w - 16;
+      int center_x = bounds.size.w / 2;
+      int group_left = center_x - (combined_w / 2);
+      // If sky is hidden, center only the temperature in the screen center
+          // Cap temp width to screen width minus margins so it doesn't overflow
+          int max_temp_w_screen = bounds.size.w - 16;
+          if (max_temp_w_screen < 0) max_temp_w_screen = 0;
+          if (temperature_width > max_temp_w_screen) temperature_width = max_temp_w_screen;
+          int temp_x_center = center_x - (temperature_width / 2);
+          layer_set_frame(text_layer_get_layer(s_temperature_layer), GRect(temp_x_center, temp_y, temperature_width, 20));
+    } else {
+      if (combined_w > available_w - gutter) combined_w = available_w - gutter;
+      int group_left = hum_right + (available_w - combined_w) / 2;
+      // If the sky layer is hidden, center only the temperature in the gap
+        // Cap temp width to the available gap (leave room for a small gutter)
+        int max_temp_w_gap = available_w - gutter * 2;
+        if (max_temp_w_gap < 0) max_temp_w_gap = 0;
+        if (temperature_width > max_temp_w_gap) temperature_width = max_temp_w_gap;
+        int temp_x = hum_right + (available_w - temperature_width) / 2;
+        layer_set_frame(text_layer_get_layer(s_temperature_layer), GRect(temp_x, temp_y, temperature_width, 20));
+    }
+    text_layer_set_overflow_mode(s_temperature_layer, GTextOverflowModeTrailingEllipsis);
+  }
+
+    // Always prefer the companion/module-provided glyph. If present, show it
+    // and hide the procedural sky layer. If not present, show an empty glyph
+    // layer (hidden) and leave the procedural drawing in place as a fallback.
+    if (s_sky_glyph_buf[0]) {
+      text_layer_set_text(s_sky_glyph_layer, s_sky_glyph_buf);
+      text_layer_set_text_color(s_sky_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+      layer_set_hidden(text_layer_get_layer(s_sky_glyph_layer), false);
+    } else {
+      // No glyph provided: keep glyph layer hidden and show procedural sky
+      text_layer_set_text(s_sky_glyph_layer, "");
+      // procedural layer removed; nothing else to hide/show
+      layer_set_hidden(text_layer_get_layer(s_sky_glyph_layer), true);
+    }
+
+    // Show the raw OWM icon code in the icon test layer (Roboto) for debugging
+    if (s_icon_code_buf[0]) {
+      text_layer_set_text(s_icon_test_layer, s_icon_code_buf);
+      text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
+      layer_set_hidden(text_layer_get_layer(s_icon_test_layer), false);
+      // Also show the glyph if we have one
+      if (s_sky_glyph_buf[0]) {
+        text_layer_set_text(s_icon_glyph_layer, s_sky_glyph_buf);
+        text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+        layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+      } else {
+  text_layer_set_text(s_icon_glyph_layer, "");
+  text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+      }
+    } else {
+      layer_set_hidden(text_layer_get_layer(s_icon_test_layer), true);
+      layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), true);
+    }
 
   // Sunrise/Sunset line - always format placeholders so the layer shows something
   {
@@ -147,7 +291,12 @@ static void prv_format_and_update_weather() {
     s_status_buf[sizeof(s_status_buf)-1] = '\0';
     text_layer_set_text(s_status_layer, s_status_buf);
   } else {
-    text_layer_set_text(s_status_layer, "");
+    // No critical warnings; prefer to show city name if we have it.
+    if (s_city_buf[0]) {
+      text_layer_set_text(s_status_layer, s_city_buf);
+    } else {
+      text_layer_set_text(s_status_layer, "");
+    }
     text_layer_set_text_color(s_status_layer, s_dark_mode ? GColorWhite : GColorBlack);
   }
 }
@@ -164,50 +313,15 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
     tt = dict_read_next(iter);
   }
 
+  // Let weather module parse weather-related keys and notify via callback
+  weather_handle_inbox(iter);
+
+  // Non-weather keys handled here
   Tuple *t;
-  t = dict_find(iter, MESSAGE_KEY_WEATHER_TEMP);
-  if (t) s_temp = (int)t->value->int32;
-  t = dict_find(iter, MESSAGE_KEY_WEATHER_HUMIDITY);
-  if (t) s_humidity = (int)t->value->int32;
-  t = dict_find(iter, MESSAGE_KEY_WEATHER_MIN);
-  if (t) s_min = (int)t->value->int32;
-  t = dict_find(iter, MESSAGE_KEY_WEATHER_MAX);
-  if (t) s_max = (int)t->value->int32;
-  t = dict_find(iter, MESSAGE_KEY_SUNRISE);
-  if (t) {
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) {
-      long v = strtol(t->value->cstring, NULL, 10);
-      s_sunrise = (time_t)v;
-    } else {
-      s_sunrise = (time_t)t->value->int32;
-    }
-    APP_LOG(APP_LOG_LEVEL_INFO, "Received SUNRISE: %ld", (long)s_sunrise);
-  }
-  t = dict_find(iter, MESSAGE_KEY_SUNSET);
-  if (t) {
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) {
-      long v = strtol(t->value->cstring, NULL, 10);
-      s_sunset = (time_t)v;
-    } else {
-      s_sunset = (time_t)t->value->int32;
-    }
-    APP_LOG(APP_LOG_LEVEL_INFO, "Received SUNSET: %ld", (long)s_sunset);
-  }
-  // Optional: watch-initiated status
   t = dict_find(iter, MESSAGE_KEY_BT_CONNECTED);
   if (t) s_bt_connected = (bool)t->value->int32;
   t = dict_find(iter, MESSAGE_KEY_BATTERY_LEVEL);
   if (t) s_battery_level = (int)t->value->int32;
-
-  // SKY_COND may be sent as numeric code (0=clear,1=clouds,2=precip)
-  t = dict_find(iter, MESSAGE_KEY_SKY_COND);
-  if (t) {
-    int sc = 0;
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) sc = atoi(t->value->cstring);
-    else sc = (int)t->value->int32;
-    s_sky_code = sc;
-    if (s_sky_layer) layer_mark_dirty(s_sky_layer);
-  }
 
   // DARK_MODE may come as an int or string; if present, persist and apply
   t = dict_find(iter, MESSAGE_KEY_DARK_MODE);
@@ -223,8 +337,6 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
     persist_write_int(PERSIST_KEY_DARK_MODE, dm);
     APP_LOG(APP_LOG_LEVEL_INFO, "DARK_MODE set to %d", dm);
   }
-
-  prv_format_and_update_weather();
 }
 
 static void prv_inbox_dropped(AppMessageResult reason, void *context) {
@@ -246,27 +358,15 @@ static void prv_bluetooth_callback(bool connected) {
   s_bt_connected = connected;
   prv_format_and_update_weather();
   if (!was_connected && connected) {
-    time_t now = time(NULL);
-    if (now - s_last_weather_request >= WEATHER_COOLDOWN) {
-      prv_request_weather();
-      s_last_weather_request = now;
-    } else {
-      APP_LOG(APP_LOG_LEVEL_INFO, "Skipping weather request due to cooldown (%lds left)", (long)(WEATHER_COOLDOWN - (now - s_last_weather_request)));
+    // Delegate to weather module which will enforce its own cooldown.
+    if (!weather_request()) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "weather_request() skipped due to cooldown inside module");
     }
   }
 }
 
-static void prv_request_weather(void) {
-  DictionaryIterator *iter;
-  if (app_message_outbox_begin(&iter) == APP_MSG_OK) {
-    dict_write_int8(iter, 100, 1);
-    dict_write_end(iter);
-    app_message_outbox_send();
-    s_last_weather_request = time(NULL);
-  } else {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to begin outbox to request weather");
-  }
-}
+/* prv_request_weather removed: use weather_request() or weather_force_request() from the
+   weather module which enforces cooldown internally. */
 
 static void prv_battery_callback(BatteryChargeState state) {
   s_battery_level = state.charge_percent;
@@ -274,109 +374,22 @@ static void prv_battery_callback(BatteryChargeState state) {
 }
 
 // Draw a small filled icon for the sky condition in the top-left.
-static void sky_layer_update_proc(Layer *layer, GContext *ctx) {
-  GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_fill_color(ctx, s_dark_mode ? GColorWhite : GColorBlack);
-  const int ICON_SIZE = 16;
-  const int SPACING = 4;
-  const int CLOUD_Y_OFFSET = -1; // raise cloud vertically so it sits higher (reduced to lower by 2px)
-
-  // If testing flag is set, draw three icons left-to-right centered in layer
-  if (s_sky_test_all) {
-    int total_w = 3 * ICON_SIZE + 2 * SPACING;
-    int left = (bounds.size.w - total_w) / 2;
-    for (int i = 0; i < 3; i++) {
-      GRect icon = GRect(left + i * (ICON_SIZE + SPACING), 0, ICON_SIZE, ICON_SIZE);
-      GPoint c = GPoint(icon.origin.x + ICON_SIZE/2, icon.origin.y + ICON_SIZE/2);
-      if (i == 0) {
-        // Sun
-        graphics_fill_circle(ctx, c, 5);
-        for (int r = 0; r < 8; r++) {
-          int angle = r * 45;
-          int16_t sx = c.x + (int16_t)(sin_lookup(TRIG_MAX_ANGLE * angle / 360) * 7 / TRIG_MAX_RATIO);
-          int16_t sy = c.y - (int16_t)(cos_lookup(TRIG_MAX_ANGLE * angle / 360) * 7 / TRIG_MAX_RATIO);
-          graphics_fill_circle(ctx, GPoint(sx, sy), 1);
-        }
-      } else if (i == 1) {
-  // Cloud (lowered slightly)
-  GPoint p1 = GPoint(c.x - 3, c.y + 1 + CLOUD_Y_OFFSET);
-  GPoint p2 = GPoint(c.x + 3, c.y + 1 + CLOUD_Y_OFFSET);
-  graphics_fill_circle(ctx, p1, 4);
-  graphics_fill_circle(ctx, p2, 4);
-  graphics_fill_rect(ctx, GRect(c.x - 8, c.y + 1 + CLOUD_Y_OFFSET, 16, 6), 2, GCornersAll);
-      } else {
-        // Rain: teardrop oriented with round bottom and triangular top
-        int dx = c.x;
-        int dy_bot = c.y + 3; // lift the drop by 2 pixels
-        // rounded bottom (larger radius for rounder bottom)
-        int bottom_radius = 4.5;
-        graphics_fill_circle(ctx, GPoint(dx, dy_bot), bottom_radius);
-        // triangular top using GPath (shorter and wider) placed just above circle
-        {
-          int base_y = dy_bot - bottom_radius - 1; // base just above circle
-          GPathInfo tri_info = {3, (GPoint[]){{0, -5}, {-3, 0}, {3, 0}}};
-          GPath *tri = gpath_create(&tri_info);
-          gpath_move_to(tri, GPoint(dx, base_y));
-          gpath_draw_filled(ctx, tri);
-          gpath_destroy(tri);
-        }
-      }
-    }
-  } else {
-    // Single icon mode (draw centered)
-    GPoint center = GPoint(bounds.size.w/2, bounds.size.h/2);
-    if (s_sky_code == 0) {
-      // Sun
-      graphics_fill_circle(ctx, center, 5);
-      for (int r = 0; r < 8; r++) {
-        int angle = r * 45;
-        int16_t sx = center.x + (int16_t)(sin_lookup(TRIG_MAX_ANGLE * angle / 360) * 7 / TRIG_MAX_RATIO);
-        int16_t sy = center.y - (int16_t)(cos_lookup(TRIG_MAX_ANGLE * angle / 360) * 7 / TRIG_MAX_RATIO);
-        graphics_fill_circle(ctx, GPoint(sx, sy), 1);
-      }
-    } else if (s_sky_code == 1) {
-      // Cloud (raised)
-      const int CLOUD_Y_OFFSET_SINGLE = -1;
-      GPoint p1 = GPoint(center.x - 3, center.y + 1 + CLOUD_Y_OFFSET_SINGLE);
-      GPoint p2 = GPoint(center.x + 3, center.y + 1 + CLOUD_Y_OFFSET_SINGLE);
-      graphics_fill_circle(ctx, p1, 4);
-      graphics_fill_circle(ctx, p2, 4);
-      graphics_fill_rect(ctx, GRect(center.x - 8, center.y + 1 + CLOUD_Y_OFFSET_SINGLE, 16, 6), 2, GCornersAll);
-    } else {
-      // Rain: teardrop oriented with round bottom and triangular top (single icon)
-      int dx = center.x;
-      int dy_bot = center.y + 3; // lift the drop by 2 pixels
-      int bottom_radius = 4.5;
-      graphics_fill_circle(ctx, GPoint(dx, dy_bot), bottom_radius);
-      {
-        int base_y = dy_bot - bottom_radius - 1;
-  GPathInfo tri_info = {3, (GPoint[]){{0, -5}, {-3, 0}, {3, 0}}};
-        GPath *tri = gpath_create(&tri_info);
-        gpath_move_to(tri, GPoint(dx, base_y));
-        gpath_draw_filled(ctx, tri);
-        gpath_destroy(tri);
-      }
-    }
-  }
-}
+// Procedural sky icons removed. Glyphs (from companion/module) are used.
 
 static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   prv_update_time();
   // Every 30 minutes, request weather refresh
   if ((tick_time->tm_min % 20) == 0) {
-    prv_request_weather();
+    // Delegate to weather module which enforces cooldown
+    if (!weather_request()) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "weather_request() skipped due to cooldown inside module (tick)");
+    }
   }
 }
 
 static void prv_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
-
-  // Try to load a custom LECO font if present in resources. If not present
-  // the build won't define the RESOURCE_ID symbol and this block is skipped.
-#ifdef RESOURCE_ID_FONT_LECO_BOLD
-  s_leco_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_BOLD));
-#endif
 
   // Make the watchface background black
   if (s_dark_mode) {
@@ -391,10 +404,52 @@ static void prv_window_load(Window *window) {
   s_time_layer = text_layer_create(GRect(0, time_y, bounds.size.w, TIME_H));
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_text_color(s_time_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
+  // Try to load a custom time font (Prototype 48) if present
+  #ifdef RESOURCE_ID_FONT_PROTOTYPE_48
+    s_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_47));
+  #endif
+  if (s_time_font) {
+    text_layer_set_font(s_time_layer, s_time_font);
+  } else {
+    text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49));
+  }
   // Center the time horizontally
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
   layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+
+  // Icon test layer directly underneath the time so we can preview glyphs
+  // from the weather icon font. Shows the first four glyphs from the
+  // package.json characterRegex so you can see how they render.
+  #ifdef RESOURCE_ID_FONT_WEATHER_24
+    s_icon_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_WEATHER_24));
+  #endif
+  #ifdef RESOURCE_ID_FONT_WEATHER_12
+    s_sky_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_WEATHER_12));
+  #endif
+  const int ICON_TEST_H = 28;
+  int icon_test_y = time_y + TIME_H + 2;
+  // Glyph layer (small square) sits left of the icon code text. Use 20px width
+  // so it displays a single glyph clearly. It will be hidden unless a glyph
+  // is provided by the companion/module.
+  s_icon_glyph_layer = text_layer_create(GRect(6, icon_test_y + 2, 20, ICON_TEST_H - 4));
+  text_layer_set_background_color(s_icon_glyph_layer, GColorClear);
+  text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  if (s_sky_font) text_layer_set_font(s_icon_glyph_layer, s_sky_font);
+  else if (s_icon_font) text_layer_set_font(s_icon_glyph_layer, s_icon_font);
+  else text_layer_set_font(s_icon_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_icon_glyph_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_icon_glyph_layer, "");
+  layer_add_child(window_layer, text_layer_get_layer(s_icon_glyph_layer));
+
+  s_icon_test_layer = text_layer_create(GRect(32, icon_test_y, bounds.size.w - 32, ICON_TEST_H));
+  text_layer_set_background_color(s_icon_test_layer, GColorClear);
+  text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  // Use a readable Roboto variant for the raw icon code display
+  text_layer_set_font(s_icon_test_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
+  text_layer_set_text_alignment(s_icon_test_layer, GTextAlignmentLeft);
+  // Initially empty; will be populated with the OWM icon code (e.g. "01d")
+  text_layer_set_text(s_icon_test_layer, "");
+  layer_add_child(window_layer, text_layer_get_layer(s_icon_test_layer));
 
   // Date above time: left-justified and using LECO if available, otherwise fallback
   const int DATE_H = 28;
@@ -403,47 +458,68 @@ static void prv_window_load(Window *window) {
   s_date_layer = text_layer_create(GRect(0, date_y, bounds.size.w, DATE_H));
   text_layer_set_background_color(s_date_layer, GColorClear);
   text_layer_set_text_color(s_date_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  if (s_leco_font) {
-    text_layer_set_font(s_date_layer, s_leco_font);
+  // Try to load a custom LECO font if present in resources. If not present
+  // the build won't define the RESOURCE_ID symbol and this block is skipped.
+  #ifdef RESOURCE_ID_FONT_KONSTRUCT_335
+    s_date_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_KONSTRUCT_33));
+  #endif
+  if (s_date_font) {
+    text_layer_set_font(s_date_layer, s_date_font);
   } else {
     text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   }
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
 
-  // Create a single small sky icon layer positioned in the upper-left corner
+  // Arrange top-row: center the sky icon and temperature as a group, put
+  // humidity on the left, and min/max on the right.
   const int ICON_SIZE = 16;
-  int sky_x = 0;
-  int sky_y = 0;
-  s_sky_layer = layer_create(GRect(sky_x, sky_y, ICON_SIZE, ICON_SIZE));
-  layer_set_update_proc(s_sky_layer, sky_layer_update_proc);
-  layer_add_child(window_layer, s_sky_layer);
+  const int GAP = 4;
+  int top_metric_y = -4; // small top margin
 
-  // Place weather (temp & humidity). Temperature remains near the sky icon,
-  // but humidity will be displayed centered at the very top of the screen.
-  const int sky_icon_right = sky_x + ICON_SIZE; // sky_x + ICON_SIZE from above
-  int top_metric_y = -4; // same vertical alignment for weather metrics
-  // Temperature (bold 18) placed to the right of sky icon
-  int temp_x = sky_icon_right + 2;
-  s_temperature_layer = text_layer_create(GRect(temp_x, top_metric_y, 50, 20));
+  // Combined group width: icon + gap + temp width
+  const int TEMP_W = 60;
+  int combined_w = ICON_SIZE + GAP + TEMP_W;
+  int center_x = bounds.size.w / 2;
+  int group_left = center_x - (combined_w / 2);
+
+  // Sky icon (left of the temp within the centered group)
+  int sky_x = group_left;
+  int sky_y = 0;
+  // Glyph layer (WeatherIcons font) placed where the old sky icon was.
+  s_sky_glyph_layer = text_layer_create(GRect(sky_x, sky_y, ICON_SIZE, ICON_SIZE));
+  text_layer_set_background_color(s_sky_glyph_layer, GColorClear);
+  text_layer_set_text_color(s_sky_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  if (s_sky_font) text_layer_set_font(s_sky_glyph_layer, s_sky_font);
+  else if (s_icon_font) text_layer_set_font(s_sky_glyph_layer, s_icon_font);
+  else text_layer_set_font(s_sky_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  text_layer_set_text_alignment(s_sky_glyph_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_sky_glyph_layer, "");
+  layer_add_child(window_layer, text_layer_get_layer(s_sky_glyph_layer));
+  // Show glyph layer by default (procedural icons removed)
+  layer_set_hidden(text_layer_get_layer(s_sky_glyph_layer), false);
+
+  // Temperature immediately to the right of the icon, part of the centered group
+  int temp_x = group_left + ICON_SIZE + GAP;
+  s_temperature_layer = text_layer_create(GRect(temp_x, top_metric_y, TEMP_W, 20));
   text_layer_set_background_color(s_temperature_layer, GColorClear);
   text_layer_set_text_color(s_temperature_layer, s_dark_mode ? GColorWhite : GColorBlack);
   text_layer_set_font(s_temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_temperature_layer, GTextAlignmentLeft);
   layer_add_child(window_layer, text_layer_get_layer(s_temperature_layer));
 
-  // Humidity vertically aligned with temperature (same Y), but centered horizontally
+  // Humidity on the left edge (no x offset)
   int hum_w = 60;
-  int hum_x_center = (bounds.size.w - hum_w) / 2;
-  s_humidity_layer = text_layer_create(GRect(hum_x_center, top_metric_y, hum_w, 20));
+  int hum_x = 0;
+  s_humidity_layer = text_layer_create(GRect(hum_x, top_metric_y, hum_w, 20));
   text_layer_set_background_color(s_humidity_layer, GColorClear);
   text_layer_set_text_color(s_humidity_layer, s_dark_mode ? GColorWhite : GColorBlack);
   text_layer_set_font(s_humidity_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
-  text_layer_set_text_alignment(s_humidity_layer, GTextAlignmentCenter);
+  text_layer_set_text_alignment(s_humidity_layer, GTextAlignmentLeft);
   layer_add_child(window_layer, text_layer_get_layer(s_humidity_layer));
 
-  // Place min/max in the upper-right corner, same vertical alignment and font
-  s_minmax_layer = text_layer_create(GRect(bounds.size.w - 90, top_metric_y, 86, 20));
+  // Min/max on the right edge
+  s_minmax_layer = text_layer_create(GRect(bounds.size.w - 86, top_metric_y, 86, 20));
   text_layer_set_background_color(s_minmax_layer, GColorClear);
   text_layer_set_text_color(s_minmax_layer, s_dark_mode ? GColorWhite : GColorBlack);
   text_layer_set_font(s_minmax_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
@@ -489,6 +565,9 @@ static void prv_window_load(Window *window) {
   // Ensure status line is visible in normal operation
   layer_set_hidden(text_layer_get_layer(s_status_layer), false);
 
+  // Add a Select-button handler to run a local weather test (useful in emulator)
+  window_set_click_config_provider(window, prv_click_config_provider);
+
 
   prv_update_time();
   prv_format_and_update_weather();
@@ -500,10 +579,26 @@ static void prv_window_unload(Window *window) {
   text_layer_destroy(s_temperature_layer);
   text_layer_destroy(s_humidity_layer);
   text_layer_destroy(s_minmax_layer);
-  layer_destroy(s_sky_layer);
+  text_layer_destroy(s_sky_glyph_layer);
+  text_layer_destroy(s_icon_glyph_layer);
+  text_layer_destroy(s_icon_test_layer);
+  // Procedural sky layer removed; nothing to destroy here.
   text_layer_destroy(s_sunrise_layer);
   text_layer_destroy(s_sunset_layer);
   text_layer_destroy(s_status_layer);
+  // Unload custom fonts if loaded
+  #ifdef RESOURCE_ID_FONT_PROTOTYPE_48
+    if (s_time_font) fonts_unload_custom_font(s_time_font);
+  #endif
+  #ifdef RESOURCE_ID_FONT_LECO_BOLD
+    if (s_date_font) fonts_unload_custom_font(s_date_font);
+  #endif
+  #ifdef RESOURCE_ID_FONT_WEATHER_24
+    if (s_icon_font) fonts_unload_custom_font(s_icon_font);
+  #endif
+  #ifdef RESOURCE_ID_FONT_WEATHER_12
+    if (s_sky_font) fonts_unload_custom_font(s_sky_font);
+  #endif
 }
 
 static void prv_init(void) {
@@ -542,8 +637,11 @@ static void prv_init(void) {
   prv_bluetooth_callback(s_prev_bt_connected);
   prv_battery_callback(battery_state_service_peek());
 
-  // Request weather immediately on init
-  prv_request_weather();
+  // Initialize weather module and register callback
+  weather_init(weather_module_cb, NULL);
+
+  // Start periodic weather refresh (module will force an initial request).
+  weather_start_periodic(20);
 }
 
 static void prv_set_dark_mode(bool enable) {
@@ -569,6 +667,9 @@ static void prv_deinit(void) {
   battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();
+  weather_deinit();
+  // Stop periodic polling (if enabled)
+  weather_stop_periodic();
   window_destroy(s_window);
 }
 

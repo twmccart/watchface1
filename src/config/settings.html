@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>body{font-family:sans-serif;padding:16px}label{display:block;margin:12px 0}</style>
+</head>
+<body>
+  <h3>watchface1 Settings</h3>
+  <label><input id="dark" type="checkbox"> Dark mode (black background, white text)</label>
+  <button id="save">Save</button>
+  <script>
+    document.getElementById('save').addEventListener('click', function(){
+      var d = document.getElementById('dark').checked ? '1' : '0';
+      var result = { D: d };
+      var uri = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(result));
+      window.location = uri;
+    });
+  </script>
+</body>
+</html>
