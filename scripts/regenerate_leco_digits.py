@@ -4,7 +4,7 @@ import os
 
 # Config
 WIDTH, HEIGHT = 48, 68  # target canvas
-POINTSIZE = 84          # tuned earlier for LECO
+POINTSIZE = 84          # 84 tuned earlier for LECO
 FONT_FAMILY = 'leco'
 FONT_SPECIFICATION = '-regular'
 FONT_SPECIFICATION_SHORT = FONT_SPECIFICATION.split('-')[-1]
@@ -36,8 +36,8 @@ for digit in range(10):
     y = (HEIGHT - text_h) // 2 - bbox[1] + Y_OFFSET
 
     for variant, fill, name in [
-        ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}_{FONT_SPECIFICATION_SHORT}_black.png'),
-        ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}_{FONT_SPECIFICATION_SHORT}_white.png'),
+        ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_black.png'),
+        ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_white.png'),
     ]:
         # Set background opposite to digit color
         bg = WHITE if fill == BLACK else BLACK
@@ -47,3 +47,32 @@ for digit in range(10):
         out_path = os.path.join(OUT_DIR, name)
         img.save(out_path)
         print('wrote', out_path)
+
+# Also generate half-sized digits
+if True:
+    HALF_WIDTH, HALF_HEIGHT = WIDTH // 2, HEIGHT // 2
+    HALF_POINTSIZE = POINTSIZE // 2
+    half_font = ImageFont.truetype(FONT_PATH, HALF_POINTSIZE)
+    for digit in range(10):
+        d = str(digit)
+        # Measure text size
+        bbox = half_font.getbbox(d)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+
+        # Center positions
+        x = (HALF_WIDTH - text_w) // 2 - bbox[0]
+        y = (HALF_HEIGHT - text_h) // 2 - bbox[1]
+
+        for variant, fill, name in [
+            ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}_{HALF_POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_black.png'),
+            ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}_{HALF_POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_white.png'),
+        ]:
+            # Set background opposite to digit color
+            bg = WHITE if fill == BLACK else BLACK
+            img = Image.new('RGBA', (HALF_WIDTH, HALF_HEIGHT), bg)
+            draw = ImageDraw.Draw(img)
+            draw.text((x, y), d, font=half_font, fill=fill)
+            out_path = os.path.join(OUT_DIR, name)
+            img.save(out_path)
+            print('wrote', out_path)
