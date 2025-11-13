@@ -246,9 +246,9 @@ static void prv_format_and_update_weather() {
         text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
         layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
       } else {
-  text_layer_set_text(s_icon_glyph_layer, "");
-  text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+        text_layer_set_text(s_icon_glyph_layer, "");
+        text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+        layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
       }
     } else {
       layer_set_hidden(text_layer_get_layer(s_icon_test_layer), true);
