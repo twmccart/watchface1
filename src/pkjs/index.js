@@ -18,8 +18,18 @@ var OWM_LON = null; // e.g. -74.0060
 // Helper: send message to watch
 function sendMessage(payload) {
   if (!Pebble || !Pebble.sendAppMessage) return;
+  // Debug: log each key/value pair with details about sky glyph/icon
+  for (var key in payload) {
+    if (key == '10007') { // SKY_GLYPH
+      console.log('SKY_GLYPH (10007): "' + payload[key] + '" (length=' + payload[key].length + ')');
+    } else if (key == '10008') { // SKY_ICON  
+      console.log('SKY_ICON (10008): "' + payload[key] + '"');
+    } else {
+      console.log('Key ' + key + ': ' + payload[key]);
+    }
+  }
   Pebble.sendAppMessage(payload, function() {
-    console.log('Sent', JSON.stringify(payload));
+    console.log('Send successful');
   }, function(e) {
     console.log('Send failed: ' + JSON.stringify(e));
   });

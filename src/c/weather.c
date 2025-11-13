@@ -2,14 +2,13 @@
 #include "message_keys.auto.h"
 // Fallback for SKY_GLYPH message key if generated header isn't up-to-date.
 #ifndef MESSAGE_KEY_SKY_GLYPH
-#define MESSAGE_KEY_SKY_GLYPH 10012
+#define MESSAGE_KEY_SKY_GLYPH 10007
 #endif
 #ifndef MESSAGE_KEY_SKY_ICON
-#define MESSAGE_KEY_SKY_ICON 10013
+#define MESSAGE_KEY_SKY_ICON 10008
 #endif
 
-/* Forward declare mapping function so notify_if_needed can call it */
-static const char *map_icon_code_to_glyph(const char *icon_code);
+/* C-side glyph mapping removed - companion handles all mapping */
 
 /* Internal state */
 static weather_data_t s_data = {0};
@@ -42,16 +41,13 @@ const weather_data_t *weather_get(void) {
 }
 
 static void notify_if_needed(void) {
-  // If the companion didn't send a glyph but did send an icon code, try a
-  // default mapping so the UI can display something. The mapping is a
-  // placeholder the user can customize.
-  if (s_data.glyph[0] == '\0' && s_data.icon_code[0]) {
-    const char *g = map_icon_code_to_glyph(s_data.icon_code);
-    if (g && g[0]) {
-      strncpy(s_data.glyph, g, sizeof(s_data.glyph));
-      s_data.glyph[sizeof(s_data.glyph)-1] = '\0';
-    }
-  }
+  // Per design: do NOT synthesize a glyph from the icon_code. Only use
+  // an explicit glyph provided by the companion (MESSAGE_KEY_SKY_GLYPH).
+  // If no glyph was provided, leave s_data.glyph empty so the UI can
+  // decide to hide glyphs. This matches the user's instruction to rely
+  // solely on the OWM icon string/glyph provided by the companion.
+  APP_LOG(APP_LOG_LEVEL_INFO, "notify_if_needed: glyph='%s' (len=%d) icon='%s' temp=%d", 
+          s_data.glyph, (int)strlen(s_data.glyph), s_data.icon_code, s_data.temp);
   if (s_callback) s_callback(&s_data, s_callback_ctx);
 }
 
@@ -100,6 +96,7 @@ void weather_handle_inbox(DictionaryIterator *iter) {
     if (strncmp(s_data.glyph, t->value->cstring, sizeof(s_data.glyph)) != 0) {
       strncpy(s_data.glyph, t->value->cstring, sizeof(s_data.glyph));
       s_data.glyph[sizeof(s_data.glyph)-1] = '\0';
+      APP_LOG(APP_LOG_LEVEL_INFO, "Received SKY_GLYPH: '%s' (len=%d)", s_data.glyph, (int)strlen(s_data.glyph));
       changed = true;
     }
   }
@@ -108,6 +105,7 @@ void weather_handle_inbox(DictionaryIterator *iter) {
     if (strncmp(s_data.icon_code, t->value->cstring, sizeof(s_data.icon_code)) != 0) {
       strncpy(s_data.icon_code, t->value->cstring, sizeof(s_data.icon_code));
       s_data.icon_code[sizeof(s_data.icon_code)-1] = '\0';
+      APP_LOG(APP_LOG_LEVEL_INFO, "Received SKY_ICON: '%s'", s_data.icon_code);
       changed = true;
     }
   }
@@ -340,6 +338,10 @@ void weather_run_sample_test(void) {
   s_data.city[sizeof(s_data.city)-1] = '\0';
   strncpy(s_data.icon_code, "01d", sizeof(s_data.icon_code));
   s_data.icon_code[sizeof(s_data.icon_code)-1] = '\0';
+  /* For emulator/test mode also populate a sample glyph so the UI shows
+     both the raw icon string and a glyph (mimics companion-provided glyph). */
+  strncpy(s_data.glyph, "", sizeof(s_data.glyph));
+  s_data.glyph[sizeof(s_data.glyph)-1] = '\0';
   notify_if_needed();
 }
 

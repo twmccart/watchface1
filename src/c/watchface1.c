@@ -134,11 +134,9 @@ static void weather_module_cb(const weather_data_t *data, void *ctx) {
     strncpy(s_sky_glyph_buf, data->glyph, sizeof(s_sky_glyph_buf));
     s_sky_glyph_buf[sizeof(s_sky_glyph_buf)-1] = '\0';
   } else {
-    // If no glyph was provided, store a visible fallback glyph so the UI
-    // doesn't show an empty box. Use U+F0B1 () from the weather icon set
-    // or a placeholder character present in many fonts.
-      strncpy(s_sky_glyph_buf, "", sizeof(s_sky_glyph_buf));
-    s_sky_glyph_buf[sizeof(s_sky_glyph_buf)-1] = '\0';
+    // Per design: do NOT synthesize or show a fallback glyph here. Leave
+    // the glyph buffer empty so the UI can hide glyphs when none provided.
+    s_sky_glyph_buf[0] = '\0';
   }
   // Copy raw OWM icon code string (like "01d") for display when present
   if (data->icon_code && data->icon_code[0]) {
@@ -235,20 +233,18 @@ static void prv_format_and_update_weather() {
       layer_set_hidden(text_layer_get_layer(s_sky_glyph_layer), true);
     }
 
-    // Show the raw OWM icon code in the icon test layer (Roboto) for debugging
+    // Show the raw OWM icon code in the icon test layer (Roboto) for debugging.
+    // Only show the glyph layer if the companion provided an explicit glyph.
     if (s_icon_code_buf[0]) {
       text_layer_set_text(s_icon_test_layer, s_icon_code_buf);
       text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
       layer_set_hidden(text_layer_get_layer(s_icon_test_layer), false);
-      // Also show the glyph if we have one
       if (s_sky_glyph_buf[0]) {
         text_layer_set_text(s_icon_glyph_layer, s_sky_glyph_buf);
         text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
         layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
       } else {
-        text_layer_set_text(s_icon_glyph_layer, "");
-        text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
-        layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+        layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), true);
       }
     } else {
       layer_set_hidden(text_layer_get_layer(s_icon_test_layer), true);
