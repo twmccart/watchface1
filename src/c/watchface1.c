@@ -17,9 +17,9 @@
 static bool s_dark_mode = false;
 
 // Time font selection - change this to switch between different font bitmaps
-static const char* time_font = "leco-84-regular"; // Options: "leco", "leco-bold", "entsans" (add more fonts as needed)
+static const char* time_font = "leco_regular_88"; // Options: "leco_regular_88", "alpenkreuzer-60" "leco-bold", "entsans" (add more fonts as needed)
 // Date font selection - change this to switch between different date font bitmaps
-static const char* date_font = "leco-42-regular"; // Options: "leco-42-regular" (add more date fonts as needed)
+static const char* date_font = "leco-regular-42"; // Options: "leco-regular-42", "alpenkreuzer-30" (add more date fonts as needed)
 static GFont s_icon_font = NULL;
 static GFont s_sky_font = NULL; // FONT_WEATHER_12 for the small sky glyph
 
@@ -62,6 +62,10 @@ static TextLayer *s_icon_glyph_layer; // shows the WeatherIcons glyph next to th
 static TextLayer *s_temperature_layer, *s_humidity_layer, *s_minmax_layer, *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
 static TextLayer *s_sky_glyph_layer;
 static bool s_sky_test_all = false; // when true, draw all three icons for testing
+
+// Feature flag: Enable/disable icon test layers for debugging weather icons
+// Set to true to show weather icon debugging info next to the minutes display
+static bool s_enable_icon_test = false;
 
 
 
@@ -115,70 +119,138 @@ enum {
 // Helper function to get bitmap resource ID for a digit based on dark mode and font
 static uint32_t get_digit_resource_id(int digit, const char* font_string, bool dark_mode) {
   // Use font-specific resource names based on time_font setting
-  if (strcmp(font_string, "leco-84-regular") == 0) {
+  if (strcmp(font_string, "leco_regular_88") == 0) {
     if (dark_mode) {
       // White LECO digits on dark background to show bitmap edges
       switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_84_REGULAR_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_84_REGULAR_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_84_REGULAR_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_84_REGULAR_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_84_REGULAR_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_84_REGULAR_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_84_REGULAR_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_84_REGULAR_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_84_REGULAR_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_84_REGULAR_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_LECO_84_REGULAR_WHITE; // fallback
+        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_WHITE;
+        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_88_WHITE;
+        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_88_WHITE;
+        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_88_WHITE;
+        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_88_WHITE;
+        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_88_WHITE;
+        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_88_WHITE;
+        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_88_WHITE;
+        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_88_WHITE;
+        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_88_WHITE;
+        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_WHITE; // fallback
       }
     } else {
       // Black LECO digits on light background
       switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_84_REGULAR_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_84_REGULAR_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_84_REGULAR_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_84_REGULAR_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_84_REGULAR_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_84_REGULAR_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_84_REGULAR_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_84_REGULAR_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_84_REGULAR_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_84_REGULAR_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_LECO_84_REGULAR_BLACK; // fallback
+        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_BLACK;
+        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_88_BLACK;
+        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_88_BLACK;
+        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_88_BLACK;
+        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_88_BLACK;
+        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_88_BLACK;
+        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_88_BLACK;
+        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_88_BLACK;
+        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_88_BLACK;
+        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_88_BLACK;
+        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_BLACK; // fallback
       }
     }
   }
 
-    if (strcmp(font_string, "leco-42-regular") == 0) {
+    if (strcmp(font_string, "leco-regular-42") == 0) {
     if (dark_mode) {
       // White LECO digits on dark background to show bitmap edges
       switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_42_REGULAR_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_42_REGULAR_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_42_REGULAR_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_42_REGULAR_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_42_REGULAR_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_42_REGULAR_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_42_REGULAR_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_42_REGULAR_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_42_REGULAR_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_42_REGULAR_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_LECO_42_REGULAR_WHITE; // fallback
+        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_WHITE;
+        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_42_WHITE;
+        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_42_WHITE;
+        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_42_WHITE;
+        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_42_WHITE;
+        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_42_WHITE;
+        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_42_WHITE;
+        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_42_WHITE;
+        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_42_WHITE;
+        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_42_WHITE;
+        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_WHITE; // fallback
       }
     } else {
       // Black LECO digits on light background
       switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_42_REGULAR_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_42_REGULAR_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_42_REGULAR_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_42_REGULAR_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_42_REGULAR_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_42_REGULAR_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_42_REGULAR_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_42_REGULAR_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_42_REGULAR_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_42_REGULAR_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_LECO_42_REGULAR_BLACK; // fallback
+        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_BLACK;
+        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_42_BLACK;
+        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_42_BLACK;
+        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_42_BLACK;
+        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_42_BLACK;
+        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_42_BLACK;
+        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_42_BLACK;
+        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_42_BLACK;
+        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_42_BLACK;
+        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_42_BLACK;
+        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_BLACK; // fallback
+      }
+    }
+  }
+
+  if (strcmp(font_string, "alpenkreuzer-60") == 0) {
+    if (dark_mode) {
+      // White LECO digits on dark background to show bitmap edges
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_WHITE;
+        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_60_WHITE;
+        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_60_WHITE;
+        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_60_WHITE;
+        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_60_WHITE;
+        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_60_WHITE;
+        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_60_WHITE;
+        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_60_WHITE;
+        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_60_WHITE;
+        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_60_WHITE;
+        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_WHITE; // fallback
+      }
+    } else {
+      // Black LECO digits on light background
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_BLACK;
+        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_60_BLACK;
+        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_60_BLACK;
+        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_60_BLACK;
+        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_60_BLACK;
+        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_60_BLACK;
+        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_60_BLACK;
+        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_60_BLACK;
+        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_60_BLACK;
+        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_60_BLACK;
+        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_BLACK; // fallback
+      }
+    }
+  }
+
+    if (strcmp(font_string, "alpenkreuzer-30") == 0) {
+    if (dark_mode) {
+      // White LECO digits on dark background to show bitmap edges
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_WHITE;
+        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_30_WHITE;
+        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_30_WHITE;
+        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_30_WHITE;
+        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_30_WHITE;
+        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_30_WHITE;
+        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_30_WHITE;
+        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_30_WHITE;
+        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_30_WHITE;
+        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_30_WHITE;
+        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_WHITE; // fallback
+      }
+    } else {
+      // Black LECO digits on light background
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_BLACK;
+        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_30_BLACK;
+        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_30_BLACK;
+        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_30_BLACK;
+        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_30_BLACK;
+        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_30_BLACK;
+        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_30_BLACK;
+        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_30_BLACK;
+        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_30_BLACK;
+        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_30_BLACK;
+        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_BLACK; // fallback
       }
     }
   }
@@ -213,6 +285,40 @@ static uint32_t get_digit_resource_id(int digit, const char* font_string, bool d
         case 8: return RESOURCE_ID_DIGIT_8_LECO_84_BOLD_BLACK;
         case 9: return RESOURCE_ID_DIGIT_9_LECO_84_BOLD_BLACK;
         default: return RESOURCE_ID_DIGIT_0_LECO_84_BOLD_BLACK; // fallback
+      }
+    }
+  }
+
+  if (strcmp(font_string, "alpenkreuzer") == 0) {
+    if (dark_mode) {
+      // White ENTSANS_70 digits on dark background to show bitmap edges
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE;
+        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_WHITE;
+        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_WHITE;
+        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_WHITE;
+        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_WHITE;
+        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_WHITE;
+        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_WHITE;
+        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_WHITE;
+        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_WHITE;
+        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_WHITE;
+        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE; // fallback
+      }
+    } else {
+      // Black ENTSANS_70 digits on light background
+      switch (digit) {
+        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK;
+        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_BLACK;
+        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_BLACK;
+        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_BLACK;
+        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_BLACK;
+        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_BLACK;
+        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_BLACK;
+        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_BLACK;
+        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_BLACK;
+        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_BLACK;
+        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK; // fallback
       }
     }
   }
@@ -339,7 +445,7 @@ static void prv_update_time() {
   // Font size testing: measure how wide 3 digits would be with different LECO font sizes
   if (s_window) {
     GRect bounds = layer_get_bounds(window_get_root_layer(s_window));
-    int screen_width = bounds.size.w; // Should be 144 for Pebble Time
+    int screen_width = bounds.size.w; // Should be 144 for Pebble 2 Duo
     
     // Test string of 3 digits (worst case width scenario)
     const char* test_string = "888";
@@ -529,20 +635,22 @@ static void prv_format_and_update_weather() {
 
     // Show the raw OWM icon code in the icon test layer (Roboto) for debugging.
     // Only show the glyph layer if the companion provided an explicit glyph.
-    if (s_icon_code_buf[0]) {
-      text_layer_set_text(s_icon_test_layer, s_icon_code_buf);
-      text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
-      layer_set_hidden(text_layer_get_layer(s_icon_test_layer), false);
-      if (s_sky_glyph_buf[0]) {
-        text_layer_set_text(s_icon_glyph_layer, s_sky_glyph_buf);
-        text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
-        layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+    if (s_enable_icon_test) {
+      if (s_icon_code_buf[0]) {
+        text_layer_set_text(s_icon_test_layer, s_icon_code_buf);
+        text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
+        layer_set_hidden(text_layer_get_layer(s_icon_test_layer), false);
+        if (s_sky_glyph_buf[0]) {
+          text_layer_set_text(s_icon_glyph_layer, s_sky_glyph_buf);
+          text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
+          layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), false);
+        } else {
+          layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), true);
+        }
       } else {
+        layer_set_hidden(text_layer_get_layer(s_icon_test_layer), true);
         layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), true);
       }
-    } else {
-      layer_set_hidden(text_layer_get_layer(s_icon_test_layer), true);
-      layer_set_hidden(text_layer_get_layer(s_icon_glyph_layer), true);
     }
 
   // Sunrise/Sunset line - always format placeholders so the layer shows something
@@ -729,41 +837,70 @@ static void prv_window_load(Window *window) {
   s_minute_ones_bitmap = NULL;
   
 
-  // Icon test layer directly underneath the time so we can preview glyphs
-  // from the weather icon font. Shows the first four glyphs from the
-  // package.json characterRegex so you can see how they render.
+  // Load weather fonts for both main sky display and optional icon test layers
   #ifdef RESOURCE_ID_FONT_WEATHER_24
     s_icon_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_WEATHER_24));
+    APP_LOG(APP_LOG_LEVEL_INFO, "Loaded WEATHER_24 font: %s", s_icon_font ? "SUCCESS" : "FAILED");
+    if (!s_icon_font) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "WEATHER_24 font failed to load - resource may be missing or incompatible with platform");
+    }
+  #else
+    APP_LOG(APP_LOG_LEVEL_WARNING, "RESOURCE_ID_FONT_WEATHER_24 not defined - font not available");
   #endif
   #ifdef RESOURCE_ID_FONT_WEATHER_12
     s_sky_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_WEATHER_12));
+    APP_LOG(APP_LOG_LEVEL_INFO, "Loaded WEATHER_12 font: %s", s_sky_font ? "SUCCESS" : "FAILED");
+    if (!s_sky_font) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "WEATHER_12 font failed to load - resource may be missing or incompatible with platform");
+    }
+  #else
+    APP_LOG(APP_LOG_LEVEL_WARNING, "RESOURCE_ID_FONT_WEATHER_12 not defined - font not available");
   #endif
-  const int ICON_TEST_H = 28;
-  int icon_test_y = minute_y + DIGIT_H + 8; // Position below the minute block
-  // Glyph layer (small square) sits left of the icon code text. Use 20px width
+
+  // Icon test layer positioned to the left of the minutes layer for glyph preview
+  // Shows weather icon glyphs from the companion/module for debugging
+  if (s_enable_icon_test) {
+    const int ICON_TEST_H = 28;
+  const int ICON_TEST_W = 46; // Width of space to the left of minutes (48px minus small margin)
+  int icon_test_x = 0; // Left edge of screen
+  int icon_test_y = minute_y + (DIGIT_H - ICON_TEST_H) / 2; // Vertically centered with minute block
+  // Glyph layer (small square) at the top of the icon test area. Use 20px width
   // so it displays a single glyph clearly. It will be hidden unless a glyph
   // is provided by the companion/module.
-  s_icon_glyph_layer = text_layer_create(GRect(6, icon_test_y + 2, 20, ICON_TEST_H - 4));
+  s_icon_glyph_layer = text_layer_create(GRect(icon_test_x + (ICON_TEST_W - 20) / 2, icon_test_y, 20, 14));
   text_layer_set_background_color(s_icon_glyph_layer, GColorClear);
   text_layer_set_text_color(s_icon_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  if (s_sky_font) text_layer_set_font(s_icon_glyph_layer, s_sky_font);
-  else if (s_icon_font) text_layer_set_font(s_icon_glyph_layer, s_icon_font);
-  else text_layer_set_font(s_icon_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  // Prefer WEATHER_12 for smaller icon test area, fallback to WEATHER_24, then system font
+  if (s_sky_font) {
+    text_layer_set_font(s_icon_glyph_layer, s_sky_font);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Icon test layer using WEATHER_12 font");
+  } else if (s_icon_font) {
+    text_layer_set_font(s_icon_glyph_layer, s_icon_font);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Icon test layer using WEATHER_24 font");
+  } else {
+    text_layer_set_font(s_icon_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Icon test layer falling back to system font");
+  }
   text_layer_set_text_alignment(s_icon_glyph_layer, GTextAlignmentCenter);
   text_layer_set_text(s_icon_glyph_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_icon_glyph_layer));
 
-  s_icon_test_layer = text_layer_create(GRect(32, icon_test_y, bounds.size.w - 32, ICON_TEST_H));
+  // Icon code text layer below the glyph, showing raw OWM icon code (e.g. "01d")
+  s_icon_test_layer = text_layer_create(GRect(icon_test_x, icon_test_y + 14, ICON_TEST_W, 14));
   text_layer_set_background_color(s_icon_test_layer, GColorClear);
   text_layer_set_text_color(s_icon_test_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  // Use a readable Roboto variant for the raw icon code display
-  text_layer_set_font(s_icon_test_layer, fonts_get_system_font(FONT_KEY_ROBOTO_CONDENSED_21));
-  text_layer_set_text_alignment(s_icon_test_layer, GTextAlignmentLeft);
+  // Use a smaller font to fit in the narrow space
+  text_layer_set_font(s_icon_test_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_icon_test_layer, GTextAlignmentCenter);
   // Initially empty; will be populated with the OWM icon code (e.g. "01d")
   text_layer_set_text(s_icon_test_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_icon_test_layer));
+  } else {
+    // Icon test disabled: ensure layer pointers are NULL
+    s_icon_glyph_layer = NULL;
+    s_icon_test_layer = NULL;
+  }
   // End Icon test layer
-
 
 
   // Month and day complication to the right of the time blocks (bitmap digits)
@@ -822,9 +959,17 @@ static void prv_window_load(Window *window) {
   s_sky_glyph_layer = text_layer_create(GRect(sky_x, sky_y, ICON_SIZE, ICON_SIZE));
   text_layer_set_background_color(s_sky_glyph_layer, GColorClear);
   text_layer_set_text_color(s_sky_glyph_layer, s_dark_mode ? GColorWhite : GColorBlack);
-  if (s_sky_font) text_layer_set_font(s_sky_glyph_layer, s_sky_font);
-  else if (s_icon_font) text_layer_set_font(s_sky_glyph_layer, s_icon_font);
-  else text_layer_set_font(s_sky_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18));
+  // Prefer WEATHER_12 for main display, fallback to WEATHER_24, then system font
+  if (s_sky_font) {
+    text_layer_set_font(s_sky_glyph_layer, s_sky_font);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Main sky layer using WEATHER_12 font");
+  } else if (s_icon_font) {
+    text_layer_set_font(s_sky_glyph_layer, s_icon_font);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Main sky layer using WEATHER_24 font");
+  } else {
+    text_layer_set_font(s_sky_glyph_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Main sky layer falling back to system font");
+  }
   text_layer_set_text_alignment(s_sky_glyph_layer, GTextAlignmentCenter);
   text_layer_set_text(s_sky_glyph_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_sky_glyph_layer));
@@ -928,8 +1073,10 @@ static void prv_window_unload(Window *window) {
   text_layer_destroy(s_humidity_layer);
   text_layer_destroy(s_minmax_layer);
   text_layer_destroy(s_sky_glyph_layer);
-  text_layer_destroy(s_icon_glyph_layer);
-  text_layer_destroy(s_icon_test_layer);
+  if (s_enable_icon_test) {
+    text_layer_destroy(s_icon_glyph_layer);
+    text_layer_destroy(s_icon_test_layer);
+  }
   // Procedural sky layer removed; nothing to destroy here.
   text_layer_destroy(s_sunrise_layer);
   text_layer_destroy(s_sunset_layer);

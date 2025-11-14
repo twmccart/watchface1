@@ -4,7 +4,7 @@ import os
 
 # Config
 WIDTH, HEIGHT = 48, 68  # target canvas
-POINTSIZE = 84          # 84 tuned earlier for LECO
+POINTSIZE = 88          # 84 tuned earlier for LECO
 FONT_FAMILY = 'leco'
 FONT_SPECIFICATION = '-regular'
 FONT_SPECIFICATION_SHORT = FONT_SPECIFICATION.split('-')[-1]
@@ -21,7 +21,7 @@ font = ImageFont.truetype(FONT_PATH, POINTSIZE)
 
 # Vertical tweak to visually center in 68px canvas
 # This may need a small offset depending on baseline; start at +1
-Y_OFFSET = +1
+Y_OFFSET = 0
 
 for digit in range(10):
     d = str(digit)
@@ -36,22 +36,24 @@ for digit in range(10):
     y = (HEIGHT - text_h) // 2 - bbox[1] + Y_OFFSET
 
     for variant, fill, name in [
-        ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_black.png'),
-        ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}_{POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_white.png'),
+        ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_{POINTSIZE}_black.png'),
+        ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_{POINTSIZE}_white.png'),
     ]:
         # Set background opposite to digit color
         bg = WHITE if fill == BLACK else BLACK
         img = Image.new('RGBA', (WIDTH, HEIGHT), bg)
         draw = ImageDraw.Draw(img)
+        # Disable anti-aliasing by using bitmap mode
+        draw.fontmode = "1"  # 1-bit rendering, no anti-aliasing
         draw.text((x, y), d, font=font, fill=fill)
         out_path = os.path.join(OUT_DIR, name)
-        img.save(out_path)
+        img.save(out_path, optimize=True, compress_level=9)
         print('wrote', out_path)
 
 # Also generate half-sized digits
 if True:
     HALF_WIDTH, HALF_HEIGHT = WIDTH // 2, HEIGHT // 2
-    HALF_POINTSIZE = POINTSIZE // 2
+    HALF_POINTSIZE = (POINTSIZE - 4) // 2
     half_font = ImageFont.truetype(FONT_PATH, HALF_POINTSIZE)
     for digit in range(10):
         d = str(digit)
@@ -65,14 +67,16 @@ if True:
         y = (HALF_HEIGHT - text_h) // 2 - bbox[1]
 
         for variant, fill, name in [
-            ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}_{HALF_POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_black.png'),
-            ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}_{HALF_POINTSIZE}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_white.png'),
+            ('black', BLACK, f'digit_{digit}_{FONT_FAMILY}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_{HALF_POINTSIZE}_black.png'),
+            ('white', WHITE, f'digit_{digit}_{FONT_FAMILY}{"_" + FONT_SPECIFICATION_SHORT if FONT_SPECIFICATION_SHORT else ""}_{HALF_POINTSIZE}_white.png'),
         ]:
             # Set background opposite to digit color
             bg = WHITE if fill == BLACK else BLACK
             img = Image.new('RGBA', (HALF_WIDTH, HALF_HEIGHT), bg)
             draw = ImageDraw.Draw(img)
+            # Disable anti-aliasing by using bitmap mode
+            draw.fontmode = "1"  # 1-bit rendering, no anti-aliasing
             draw.text((x, y), d, font=half_font, fill=fill)
             out_path = os.path.join(OUT_DIR, name)
-            img.save(out_path)
+            img.save(out_path, optimize=True, compress_level=9)
             print('wrote', out_path)
