@@ -16,12 +16,41 @@
 // Dark mode flag (user option to toggle later). true = black background, white text.
 static bool s_dark_mode = false;
 
-// Time font selection - change this to switch between different font bitmaps
-static const char* time_font = "leco_regular_88"; // Options: "leco_regular_88", "alpenkreuzer-60" "leco-bold", "entsans" (add more fonts as needed)
-// Date font selection - change this to switch between different date font bitmaps
-static const char* date_font = "leco-regular-42"; // Options: "leco-regular-42", "alpenkreuzer-30" (add more date fonts as needed)
 static GFont s_icon_font = NULL;
 static GFont s_sky_font = NULL; // FONT_WEATHER_12 for the small sky glyph
+
+// Sprite sheet dimensions - corrected based on actual sprite layout
+#define SPRITE_LARGE_DIGIT_WIDTH 40   // Display width for each digit (to fit cleanly)
+#define SPRITE_LARGE_DIGIT_HEIGHT 60
+#define SPRITE_LARGE_SHEET_WIDTH 480  // Total width of large sprite sheet
+#define SPRITE_LARGE_ELEMENT_WIDTH 34  // Actual width of each element in sprite (17*2)
+#define SPRITE_LARGE_ELEMENT_SPACING 40  // Spacing between element starts (34+6)
+
+#define SPRITE_MEDIUM_DIGIT_WIDTH 20  // Display width for each digit (to fit cleanly)
+#define SPRITE_MEDIUM_DIGIT_HEIGHT 30
+#define SPRITE_MEDIUM_SHEET_WIDTH 240  // Total width of medium sprite sheet
+#define SPRITE_MEDIUM_ELEMENT_WIDTH 17  // Actual width of each element in sprite  
+#define SPRITE_MEDIUM_ELEMENT_SPACING 20  // Spacing between element starts (17+3)
+
+#define SPRITE_ELEMENT_COUNT 11      // Number of elements in sprite (0-9 + empty space)
+
+// Sprite sheet bitmaps (shared for all digits)
+static GBitmap *s_time_sprite_bitmap = NULL;   // Large sprite sheet for time
+static GBitmap *s_date_sprite_bitmap = NULL;   // Medium sprite sheet for date
+
+// Track sub-bitmaps for cleanup (since we're creating them from sprite sheets)
+static GBitmap *s_current_hour_tens_bitmap = NULL;
+static GBitmap *s_current_hour_ones_bitmap = NULL;
+static GBitmap *s_current_minute_tens_bitmap = NULL;
+static GBitmap *s_current_minute_ones_bitmap = NULL;
+static GBitmap *s_current_month_tens_bitmap = NULL;
+static GBitmap *s_current_month_ones_bitmap = NULL;
+static GBitmap *s_current_day_tens_bitmap = NULL;
+static GBitmap *s_current_day_ones_bitmap = NULL;
+
+// DEBUG: Test digit display layers
+static BitmapLayer *s_test_digit_layers[10];
+static GBitmap *s_test_digit_bitmaps[10];
 
 
 // If build didn't regenerate message_keys header for DARK_MODE yet, provide a
@@ -48,20 +77,15 @@ static Window *s_window;
 // Bitmap digit layers for large time display
 static BitmapLayer *s_hour_tens_layer, *s_hour_ones_layer;
 static BitmapLayer *s_minute_tens_layer, *s_minute_ones_layer;
-static GBitmap *s_hour_tens_bitmap, *s_hour_ones_bitmap;
-static GBitmap *s_minute_tens_bitmap, *s_minute_ones_bitmap;
 
 // Bitmap digit layers for date complication (half-size)
 static BitmapLayer *s_month_tens_layer, *s_month_ones_layer;
 static BitmapLayer *s_day_tens_layer, *s_day_ones_layer;
-static GBitmap *s_month_tens_bitmap, *s_month_ones_bitmap;
-static GBitmap *s_day_tens_bitmap, *s_day_ones_bitmap;
 
 static TextLayer *s_icon_test_layer;
 static TextLayer *s_icon_glyph_layer; // shows the WeatherIcons glyph next to the icon code
 static TextLayer *s_temperature_layer, *s_humidity_layer, *s_minmax_layer, *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
 static TextLayer *s_sky_glyph_layer;
-static bool s_sky_test_all = false; // when true, draw all three icons for testing
 
 // Feature flag: Enable/disable icon test layers for debugging weather icons
 // Set to true to show weather icon debugging info next to the minutes display
@@ -94,9 +118,6 @@ static char s_icon_code_buf[8];
 // s_sky_code removed: glyphs provided by companion/module are used instead
 // Note: No text buffers needed for time or date - both use bitmap digits now
 
-// Debug helper: hide the day layer entirely while tuning month alignment
-static bool s_debug_hide_day = true; // set true to hide day layer during debugging
-
 // Forward declaration to allow runtime toggle later
 static void prv_set_dark_mode(bool enable);
 
@@ -116,276 +137,49 @@ enum {
   KEY_REQUEST_WEATHER = 100
 };
 
-// Helper function to get bitmap resource ID for a digit based on dark mode and font
-static uint32_t get_digit_resource_id(int digit, const char* font_string, bool dark_mode) {
-  // Use font-specific resource names based on time_font setting
-  if (strcmp(font_string, "leco_regular_88") == 0) {
-    if (dark_mode) {
-      // White LECO digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_88_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_88_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_88_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_88_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_88_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_88_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_88_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_88_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_88_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_WHITE; // fallback
-      }
-    } else {
-      // Black LECO digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_88_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_88_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_88_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_88_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_88_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_88_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_88_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_88_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_88_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_88_BLACK; // fallback
-      }
-    }
+// Helper function to set a bitmap layer to show a specific digit from a sprite sheet
+static void set_digit_from_sprite(BitmapLayer *layer, int digit, GBitmap *sprite_bitmap, int digit_width, int digit_height, GBitmap **cleanup_ref) {
+  if (!layer || !sprite_bitmap || digit < 0 || digit > 9) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "set_digit_from_sprite: Invalid params - layer=%p, sprite=%p, digit=%d", layer, sprite_bitmap, digit);
+    return;
   }
-
-    if (strcmp(font_string, "leco-regular-42") == 0) {
-    if (dark_mode) {
-      // White LECO digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_42_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_42_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_42_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_42_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_42_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_42_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_42_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_42_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_42_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_WHITE; // fallback
-      }
-    } else {
-      // Black LECO digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_REGULAR_42_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_REGULAR_42_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_REGULAR_42_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_REGULAR_42_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_REGULAR_42_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_REGULAR_42_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_REGULAR_42_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_REGULAR_42_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_REGULAR_42_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_LECO_REGULAR_42_BLACK; // fallback
-      }
-    }
+  
+  // Clean up any existing sub-bitmap for this layer
+  if (cleanup_ref && *cleanup_ref) {
+    gbitmap_destroy(*cleanup_ref);
+    *cleanup_ref = NULL;
   }
-
-  if (strcmp(font_string, "alpenkreuzer-60") == 0) {
-    if (dark_mode) {
-      // White LECO digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_60_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_60_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_60_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_60_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_60_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_60_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_60_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_60_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_60_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_WHITE; // fallback
-      }
-    } else {
-      // Black LECO digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_60_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_60_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_60_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_60_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_60_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_60_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_60_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_60_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_60_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_60_BLACK; // fallback
-      }
-    }
-  }
-
-    if (strcmp(font_string, "alpenkreuzer-30") == 0) {
-    if (dark_mode) {
-      // White LECO digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_30_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_30_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_30_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_30_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_30_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_30_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_30_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_30_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_30_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_WHITE; // fallback
-      }
-    } else {
-      // Black LECO digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_ALPENKREUZER_30_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_ALPENKREUZER_30_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_ALPENKREUZER_30_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_ALPENKREUZER_30_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_ALPENKREUZER_30_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_ALPENKREUZER_30_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_ALPENKREUZER_30_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_ALPENKREUZER_30_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_ALPENKREUZER_30_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_ALPENKREUZER_30_BLACK; // fallback
-      }
-    }
-  }
-
-  if (strcmp(font_string, "leco-bold") == 0) {
-    if (dark_mode) {
-      // White LECO digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_84_BOLD_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_84_BOLD_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_84_BOLD_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_84_BOLD_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_84_BOLD_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_84_BOLD_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_84_BOLD_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_84_BOLD_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_84_BOLD_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_84_BOLD_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_LECO_84_BOLD_WHITE; // fallback
-      }
-    } else {
-      // Black LECO_84_BOLD digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_LECO_84_BOLD_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_LECO_84_BOLD_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_LECO_84_BOLD_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_LECO_84_BOLD_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_LECO_84_BOLD_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_LECO_84_BOLD_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_LECO_84_BOLD_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_LECO_84_BOLD_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_LECO_84_BOLD_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_LECO_84_BOLD_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_LECO_84_BOLD_BLACK; // fallback
-      }
-    }
-  }
-
-  if (strcmp(font_string, "alpenkreuzer") == 0) {
-    if (dark_mode) {
-      // White ENTSANS_70 digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE; // fallback
-      }
-    } else {
-      // Black ENTSANS_70 digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK; // fallback
-      }
-    }
-  }
-
-  if (strcmp(font_string, "entsans") == 0) {
-    if (dark_mode) {
-      // White ENTSANS_70 digits on dark background to show bitmap edges
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE;
-        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_WHITE;
-        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_WHITE;
-        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_WHITE;
-        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_WHITE;
-        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_WHITE;
-        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_WHITE;
-        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_WHITE;
-        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_WHITE;
-        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_WHITE;
-        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_WHITE; // fallback
-      }
-    } else {
-      // Black ENTSANS_70 digits on light background
-      switch (digit) {
-        case 0: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK;
-        case 1: return RESOURCE_ID_DIGIT_1_ENTSANS_70_BLACK;
-        case 2: return RESOURCE_ID_DIGIT_2_ENTSANS_70_BLACK;
-        case 3: return RESOURCE_ID_DIGIT_3_ENTSANS_70_BLACK;
-        case 4: return RESOURCE_ID_DIGIT_4_ENTSANS_70_BLACK;
-        case 5: return RESOURCE_ID_DIGIT_5_ENTSANS_70_BLACK;
-        case 6: return RESOURCE_ID_DIGIT_6_ENTSANS_70_BLACK;
-        case 7: return RESOURCE_ID_DIGIT_7_ENTSANS_70_BLACK;
-        case 8: return RESOURCE_ID_DIGIT_8_ENTSANS_70_BLACK;
-        case 9: return RESOURCE_ID_DIGIT_9_ENTSANS_70_BLACK;
-        default: return RESOURCE_ID_DIGIT_0_ENTSANS_70_BLACK; // fallback
-      }
-    }
-  }
-
-  // Fallback to LECO digits if font not recognized (default case)
-  if (dark_mode) {
-    switch (digit) {
-      case 0: return RESOURCE_ID_DIGIT_0_LECO_WHITE;
-      case 1: return RESOURCE_ID_DIGIT_1_LECO_WHITE;
-      case 2: return RESOURCE_ID_DIGIT_2_LECO_WHITE;
-      case 3: return RESOURCE_ID_DIGIT_3_LECO_WHITE;
-      case 4: return RESOURCE_ID_DIGIT_4_LECO_WHITE;
-      case 5: return RESOURCE_ID_DIGIT_5_LECO_WHITE;
-      case 6: return RESOURCE_ID_DIGIT_6_LECO_WHITE;
-      case 7: return RESOURCE_ID_DIGIT_7_LECO_WHITE;
-      case 8: return RESOURCE_ID_DIGIT_8_LECO_WHITE;
-      case 9: return RESOURCE_ID_DIGIT_9_LECO_WHITE;
-      default: return RESOURCE_ID_DIGIT_0_LECO_WHITE;
-    }
+  
+  // Calculate the x offset for this digit in the sprite sheet
+  // Use actual element width and spacing from sprite sheet layout
+  int element_width, element_spacing;
+  if (digit_width == SPRITE_MEDIUM_DIGIT_WIDTH) {
+    element_width = SPRITE_MEDIUM_ELEMENT_WIDTH;  // 17px
+    element_spacing = 21;  // 17px digit + 3px gap + 1px adjustment = 21px total spacing
   } else {
-    switch (digit) {
-      case 0: return RESOURCE_ID_DIGIT_0_LECO_BLACK;
-      case 1: return RESOURCE_ID_DIGIT_1_LECO_BLACK;
-      case 2: return RESOURCE_ID_DIGIT_2_LECO_BLACK;
-      case 3: return RESOURCE_ID_DIGIT_3_LECO_BLACK;
-      case 4: return RESOURCE_ID_DIGIT_4_LECO_BLACK;
-      case 5: return RESOURCE_ID_DIGIT_5_LECO_BLACK;
-      case 6: return RESOURCE_ID_DIGIT_6_LECO_BLACK;
-      case 7: return RESOURCE_ID_DIGIT_7_LECO_BLACK;
-      case 8: return RESOURCE_ID_DIGIT_8_LECO_BLACK;
-      case 9: return RESOURCE_ID_DIGIT_9_LECO_BLACK;
-      default: return RESOURCE_ID_DIGIT_0_LECO_BLACK;
+    element_width = SPRITE_LARGE_ELEMENT_WIDTH;   // 34px  
+    element_spacing = 42;  // 34px digit + 6px gap + 2px adjustment = 42px total spacing
+  }
+  int x_offset = digit * element_spacing;
+  
+  APP_LOG(APP_LOG_LEVEL_INFO, "Digit %d: x_offset=%d, element_width=%d, element_spacing=%d", digit, x_offset, element_width, element_spacing);
+  
+  // Create a sub-bitmap that shows only the actual digit (not the padding)
+  GRect digit_bounds = GRect(x_offset, 0, element_width, digit_height);
+  GBitmap *digit_sub_bitmap = gbitmap_create_as_sub_bitmap(sprite_bitmap, digit_bounds);
+  
+  if (digit_sub_bitmap) {
+    // Set the sub-bitmap to the layer
+    bitmap_layer_set_bitmap(layer, digit_sub_bitmap);
+    bitmap_layer_set_background_color(layer, GColorClear);
+    
+    // Store reference for cleanup
+    if (cleanup_ref) {
+      *cleanup_ref = digit_sub_bitmap;
     }
+    APP_LOG(APP_LOG_LEVEL_INFO, "Digit %d: sub-bitmap created successfully", digit);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Digit %d: Failed to create sub-bitmap", digit);
   }
 }
 
@@ -406,115 +200,56 @@ static void prv_update_time() {
     minute = tick_time->tm_min;
   }
   
-  // Update bitmap digits for hour (always 2 digits in 24h, may be 1-2 digits in 12h)
+  // Update sprite-based time digits
   int hour_tens = hour / 10;
   int hour_ones = hour % 10;
   int minute_tens = minute / 10;
   int minute_ones = minute % 10;
   
-  // Update hour digit bitmaps
-  if (s_hour_tens_bitmap) gbitmap_destroy(s_hour_tens_bitmap);
-  if (s_hour_ones_bitmap) gbitmap_destroy(s_hour_ones_bitmap);
-  
   // For 12-hour format, hide tens digit if hour < 10
   if (!clock_is_24h_style() && hour < 10) {
-    s_hour_tens_bitmap = NULL;
-    bitmap_layer_set_bitmap(s_hour_tens_layer, NULL);
+    layer_set_hidden(bitmap_layer_get_layer(s_hour_tens_layer), true);
   } else {
-    s_hour_tens_bitmap = gbitmap_create_with_resource(get_digit_resource_id(hour_tens, time_font, s_dark_mode));
-    bitmap_layer_set_bitmap(s_hour_tens_layer, s_hour_tens_bitmap);
+    layer_set_hidden(bitmap_layer_get_layer(s_hour_tens_layer), false);
+    set_digit_from_sprite(s_hour_tens_layer, hour_tens, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_hour_tens_bitmap);
   }
-  bitmap_layer_set_background_color(s_hour_tens_layer, GColorClear);
   
-  s_hour_ones_bitmap = gbitmap_create_with_resource(get_digit_resource_id(hour_ones, time_font, s_dark_mode));
-  bitmap_layer_set_bitmap(s_hour_ones_layer, s_hour_ones_bitmap);
-  bitmap_layer_set_background_color(s_hour_ones_layer, GColorClear);
-  
-  // Update minute digit bitmaps (always 2 digits)
-  if (s_minute_tens_bitmap) gbitmap_destroy(s_minute_tens_bitmap);
-  if (s_minute_ones_bitmap) gbitmap_destroy(s_minute_ones_bitmap);
-  
-  s_minute_tens_bitmap = gbitmap_create_with_resource(get_digit_resource_id(minute_tens, time_font, s_dark_mode));
-  s_minute_ones_bitmap = gbitmap_create_with_resource(get_digit_resource_id(minute_ones, time_font, s_dark_mode));
-  
-  bitmap_layer_set_bitmap(s_minute_tens_layer, s_minute_tens_bitmap);
-  bitmap_layer_set_bitmap(s_minute_ones_layer, s_minute_ones_bitmap);
-  bitmap_layer_set_background_color(s_minute_tens_layer, GColorClear);
-  bitmap_layer_set_background_color(s_minute_ones_layer, GColorClear);
+  set_digit_from_sprite(s_hour_ones_layer, hour_ones, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_hour_ones_bitmap);
+  set_digit_from_sprite(s_minute_tens_layer, minute_tens, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_minute_tens_bitmap);
+  set_digit_from_sprite(s_minute_ones_layer, minute_ones, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_minute_ones_bitmap);
 
-  // Font size testing: measure how wide 3 digits would be with different LECO font sizes
-  if (s_window) {
-    GRect bounds = layer_get_bounds(window_get_root_layer(s_window));
-    int screen_width = bounds.size.w; // Should be 144 for Pebble 2 Duo
-    
-    // Test string of 3 digits (worst case width scenario)
-    const char* test_string = "888";
-    
-    // Test available LECO font sizes and log the results
-    #ifdef RESOURCE_ID_FONT_LECO_47
-      GFont leco_47 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_47));
-      if (leco_47) {
-        GSize size_47 = graphics_text_layout_get_content_size(test_string, leco_47, 
-          GRect(0, 0, screen_width, 100), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
-        APP_LOG(APP_LOG_LEVEL_INFO, "LECO_47: '888' width=%d, screen=%d", size_47.w, screen_width);
-        fonts_unload_custom_font(leco_47);
-      }
-    #endif
-    
-    #ifdef RESOURCE_ID_FONT_LECO_21
-      GFont leco_21 = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_LECO_21));
-      if (leco_21) {
-        GSize size_21 = graphics_text_layout_get_content_size(test_string, leco_21, 
-          GRect(0, 0, screen_width, 100), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
-        APP_LOG(APP_LOG_LEVEL_INFO, "LECO_21: '888' width=%d, screen=%d", size_21.w, screen_width);
-        fonts_unload_custom_font(leco_21);
-      }
-    #endif
-  }
-
-  // Month and day for complication (bitmap digits)
+  // DEBUG: Skip date logic while debugging sprites
+  /*
+  // Month and day for date complication (bitmap digits)
   int month = tick_time->tm_mon + 1; // tm_mon is 0-11, we want 1-12
   int day = tick_time->tm_mday;
   
-  // Update month digit bitmaps
+  // Update date sprite digits
   int month_tens = month / 10;
   int month_ones = month % 10;
   int day_tens = day / 10;
   int day_ones = day % 10;
   
-  // Destroy old bitmaps
-  if (s_month_tens_bitmap) gbitmap_destroy(s_month_tens_bitmap);
-  if (s_month_ones_bitmap) gbitmap_destroy(s_month_ones_bitmap);
-  if (s_day_tens_bitmap) gbitmap_destroy(s_day_tens_bitmap);
-  if (s_day_ones_bitmap) gbitmap_destroy(s_day_ones_bitmap);
-  
-  // Create new month bitmaps (use date_font for date)
+  // Update month digits - hide tens for months 1-9
   if (month_tens > 0) {
-    s_month_tens_bitmap = gbitmap_create_with_resource(get_digit_resource_id(month_tens, date_font, s_dark_mode));
-    bitmap_layer_set_bitmap(s_month_tens_layer, s_month_tens_bitmap);
+    layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), false);
+    set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_current_month_tens_bitmap);
   } else {
-    s_month_tens_bitmap = NULL;
-    bitmap_layer_set_bitmap(s_month_tens_layer, NULL); // Hide tens for months 1-9
+    layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), true);
   }
-  bitmap_layer_set_background_color(s_month_tens_layer, GColorClear);
   
-  s_month_ones_bitmap = gbitmap_create_with_resource(get_digit_resource_id(month_ones, date_font, s_dark_mode));
-  bitmap_layer_set_bitmap(s_month_ones_layer, s_month_ones_bitmap);
-  bitmap_layer_set_background_color(s_month_ones_layer, GColorClear);
+  set_digit_from_sprite(s_month_ones_layer, month_ones, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_current_month_ones_bitmap);
   
-  // Create new day bitmaps
+  // Update day digits - hide tens for days 1-9
   if (day_tens > 0) {
-    s_day_tens_bitmap = gbitmap_create_with_resource(get_digit_resource_id(day_tens, date_font, s_dark_mode));
-    bitmap_layer_set_bitmap(s_day_tens_layer, s_day_tens_bitmap);
+    layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), false);
+    set_digit_from_sprite(s_day_tens_layer, day_tens, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_current_day_tens_bitmap);
   } else {
-    s_day_tens_bitmap = NULL;
-    bitmap_layer_set_bitmap(s_day_tens_layer, NULL); // Hide tens for days 1-9
+    layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), true);
   }
-  bitmap_layer_set_background_color(s_day_tens_layer, GColorClear);
   
-  s_day_ones_bitmap = gbitmap_create_with_resource(get_digit_resource_id(day_ones, date_font, s_dark_mode));
-  bitmap_layer_set_bitmap(s_day_ones_layer, s_day_ones_bitmap);
-  bitmap_layer_set_background_color(s_day_ones_layer, GColorClear);
+  set_digit_from_sprite(s_day_ones_layer, day_ones, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_current_day_ones_bitmap);
+  */
 }
 
 /* Callback from weather module when new data arrives */
@@ -796,11 +531,16 @@ static void prv_window_load(Window *window) {
     window_set_background_color(window, GColorWhite);
   }
 
-  // Large bitmap digit layout: 2/3 screen width per time block
-  const int DIGIT_W = 48;          // Width for each digit bitmap (96/2 = 48 per digit)
-  const int DIGIT_H = 68;          // Height for each digit (matches regenerated bitmap size)
+  // Large bitmap digit layout: keep original 96px total width, space digits better
+  const int DIGIT_W = 34;          // Display width for each digit bitmap (closer to actual 17px * 2)
+  const int DIGIT_H = SPRITE_LARGE_DIGIT_HEIGHT;    // Height for each digit (60px)
   const int BLOCK_GAP = 1;         // Vertical gap between hour and minute (minimal gap)
-  const int BLOCK_W = 96;          // Total width for 2-digit block (2/3 of 144px screen)
+  const int BLOCK_W = 96;          // Keep original total width for 2-digit block (2/3 of 144px screen)
+  
+  // Calculate spacing to center digits nicely in 96px width
+  // 96px total - (34px + 34px) = 28px remaining space
+  // Distribute as: 14px left margin + 14px between digits + 0px right margin
+  const int TIME_PADDING = (BLOCK_W - (DIGIT_W * 2)) / 2;  // 14px padding between digits
   
   // Center the time blocks vertically
   int total_time_h = (DIGIT_H * 2) + BLOCK_GAP;
@@ -810,32 +550,39 @@ static void prv_window_load(Window *window) {
   int hour_x = 0;
   int hour_y = time_start_y;
   
-  // Hour tens digit
-  s_hour_tens_layer = bitmap_layer_create(GRect(hour_x, hour_y, DIGIT_W, DIGIT_H));
+  // Hour tens digit - start with left margin
+  int hour_left_margin = (BLOCK_W - (DIGIT_W * 2) - TIME_PADDING) / 2;  // 7px left margin
+  s_hour_tens_layer = bitmap_layer_create(GRect(hour_x + hour_left_margin, hour_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_hour_tens_layer));
   
-  // Hour ones digit 
-  s_hour_ones_layer = bitmap_layer_create(GRect(hour_x + DIGIT_W, hour_y, DIGIT_W, DIGIT_H));
+  // Hour ones digit - add padding after tens digit
+  s_hour_ones_layer = bitmap_layer_create(GRect(hour_x + hour_left_margin + DIGIT_W + TIME_PADDING, hour_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_hour_ones_layer));
   
-  // Minute block: positioned below hour block and right-aligned with screen
+  // Minute block: TEMPORARILY HIDDEN for debugging
   int minute_x = bounds.size.w - BLOCK_W;  // Right-aligned with screen edge
   int minute_y = time_start_y + DIGIT_H + BLOCK_GAP;
   
-  // Minute tens digit
-  s_minute_tens_layer = bitmap_layer_create(GRect(minute_x, minute_y, DIGIT_W, DIGIT_H));
+  // Minute tens digit - start with left margin  
+  s_minute_tens_layer = bitmap_layer_create(GRect(minute_x + hour_left_margin, minute_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_minute_tens_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_minute_tens_layer), true); // HIDDEN FOR DEBUG
   
-  // Minute ones digit
-  s_minute_ones_layer = bitmap_layer_create(GRect(minute_x + DIGIT_W, minute_y, DIGIT_W, DIGIT_H));
+  // Minute ones digit - add padding after tens digit
+  s_minute_ones_layer = bitmap_layer_create(GRect(minute_x + hour_left_margin + DIGIT_W + TIME_PADDING, minute_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_minute_ones_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_minute_ones_layer), true); // HIDDEN FOR DEBUG
   
-  // Initialize bitmap pointers to NULL
-  s_hour_tens_bitmap = NULL;
-  s_hour_ones_bitmap = NULL;
-  s_minute_tens_bitmap = NULL;  
-  s_minute_ones_bitmap = NULL;
+  // Load sprite sheet bitmaps FIRST - before creating any test digits or date digits
+  s_time_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_STOLEN_NUMBERS_LARGE);
+  s_date_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_STOLEN_NUMBERS_MEDIUM);
   
+  // DEBUG: Log sprite loading results
+  APP_LOG(APP_LOG_LEVEL_INFO, "Sprite loading: time=%p, date=%p", s_time_sprite_bitmap, s_date_sprite_bitmap);
+  if (s_date_sprite_bitmap) {
+    GSize sprite_size = gbitmap_get_bounds(s_date_sprite_bitmap).size;
+    APP_LOG(APP_LOG_LEVEL_INFO, "Date sprite size: %dx%d", sprite_size.w, sprite_size.h);
+  }
 
   // Load weather fonts for both main sky display and optional icon test layers
   #ifdef RESOURCE_ID_FONT_WEATHER_24
@@ -904,42 +651,66 @@ static void prv_window_load(Window *window) {
 
 
   // Month and day complication to the right of the time blocks (bitmap digits)
-  // Time blocks: 0-96, Available right space: 96-144 = 48 pixels
-  const int DATE_DIGIT_W = 24;     // Half-size digit width (48/2)
-  const int DATE_DIGIT_H = 34;     // Half-size digit height (68/2)
-  int date_x = BLOCK_W;            // No gap after time blocks
+  // Time blocks: 0-96 (restored), Available right space: 96-144 = 48 pixels
+  const int DATE_DIGIT_W = SPRITE_MEDIUM_DIGIT_WIDTH;     // Use actual medium sprite width (17px)
+  const int DATE_DIGIT_H = SPRITE_MEDIUM_DIGIT_HEIGHT;    // Use actual medium sprite height (30px)  
+  const int DATE_PADDING = SPRITE_MEDIUM_ELEMENT_SPACING; // 3px padding between date digits
+  int date_x = BLOCK_W;            // Start right after 96px time blocks
   
-  // Calculate month and day heights and positions for alignment
-  int half_h = DIGIT_H / 2;  // Exactly half the hour block height (68/2 = 34)
+  // Calculate month and day heights and positions for alignment with 60px digit height
+  int half_h = DIGIT_H / 2;  // Half the hour block height (60/2 = 30px)
   
   // Month digits: top half aligned with hour top
   int month_y = hour_y;
   
-  // Month tens digit (hidden for months 1-9)
+  // Month tens digit (hidden for months 1-9) - TEMPORARILY HIDDEN FOR DEBUG
   s_month_tens_layer = bitmap_layer_create(GRect(date_x, month_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_month_tens_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), true); // HIDDEN FOR DEBUG
   
-  // Month ones digit
-  s_month_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W, month_y, DATE_DIGIT_W, DATE_DIGIT_H));
+  // Month ones digit - add padding after tens digit - TEMPORARILY HIDDEN FOR DEBUG
+  s_month_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W + DATE_PADDING, month_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_month_ones_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_month_ones_layer), true); // HIDDEN FOR DEBUG
   
   // Day digits: bottom half aligned with hour bottom
   int day_y = hour_y + half_h;
   
-  // Day tens digit (hidden for days 1-9)
+  // Day tens digit (hidden for days 1-9) - TEMPORARILY HIDDEN FOR DEBUG
   s_day_tens_layer = bitmap_layer_create(GRect(date_x, day_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_tens_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), true); // HIDDEN FOR DEBUG
   
-  // Day ones digit
-  s_day_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W, day_y, DATE_DIGIT_W, DATE_DIGIT_H));
+  // Day ones digit - add padding after tens digit - TEMPORARILY HIDDEN FOR DEBUG
+  s_day_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W + DATE_PADDING, day_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_ones_layer));
+  layer_set_hidden(bitmap_layer_get_layer(s_day_ones_layer), true); // HIDDEN FOR DEBUG
   
-  // Initialize bitmap pointers to NULL
-  s_month_tens_bitmap = NULL;
-  s_month_ones_bitmap = NULL;
-  s_day_tens_bitmap = NULL;
-  s_day_ones_bitmap = NULL;
-
+  // DEBUG: Create test digit display - show digits 0-4 with full width using medium sprite
+  const int TEST_Y = bounds.size.h - 50; // Near bottom of screen
+  const int AVAILABLE_WIDTH = bounds.size.w; // Full screen width (144px)
+  const int TEST_DIGIT_COUNT = 5; // Only digits 0-4
+  const int DIGIT_DISPLAY_WIDTH = SPRITE_MEDIUM_DIGIT_WIDTH; // Full 20px width for each digit
+  const int DIGIT_SPACING = AVAILABLE_WIDTH / TEST_DIGIT_COUNT; // 28.8px per digit slot
+  
+  APP_LOG(APP_LOG_LEVEL_INFO, "Creating test digits: TEST_Y=%d, AVAILABLE_WIDTH=%d, DIGIT_SPACING=%d, DIGIT_DISPLAY_WIDTH=%d", TEST_Y, AVAILABLE_WIDTH, DIGIT_SPACING, DIGIT_DISPLAY_WIDTH);
+  
+  for (int i = 0; i < TEST_DIGIT_COUNT; i++) {
+    int test_x = i * DIGIT_SPACING + (DIGIT_SPACING - DIGIT_DISPLAY_WIDTH) / 2; // Center digit in its slot
+    APP_LOG(APP_LOG_LEVEL_INFO, "Test digit %d at x=%d", i, test_x);
+    s_test_digit_layers[i] = bitmap_layer_create(GRect(test_x, TEST_Y, DIGIT_DISPLAY_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT));
+    layer_add_child(window_layer, bitmap_layer_get_layer(s_test_digit_layers[i]));
+    
+    // Set each digit using our sprite function
+    set_digit_from_sprite(s_test_digit_layers[i], i, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_test_digit_bitmaps[i]);
+  }
+  
+  // Initialize remaining test digit layers to NULL since we're only using 0-4
+  for (int i = TEST_DIGIT_COUNT; i < 10; i++) {
+    s_test_digit_layers[i] = NULL;
+    s_test_digit_bitmaps[i] = NULL;
+  }
+  
   // Arrange top-row: center the sky icon and temperature as a group, put
   // humidity on the left, and min/max on the right.
   const int ICON_SIZE = 16;
@@ -1048,18 +819,26 @@ static void prv_window_load(Window *window) {
 }
 
 static void prv_window_unload(Window *window) {
-  // Destroy bitmap layers and resources for digit display
-  if (s_hour_tens_bitmap) gbitmap_destroy(s_hour_tens_bitmap);
-  if (s_hour_ones_bitmap) gbitmap_destroy(s_hour_ones_bitmap);
-  if (s_minute_tens_bitmap) gbitmap_destroy(s_minute_tens_bitmap);
-  if (s_minute_ones_bitmap) gbitmap_destroy(s_minute_ones_bitmap);
+  // Clean up sub-bitmaps (created from sprite sheets)
+  if (s_current_hour_tens_bitmap) gbitmap_destroy(s_current_hour_tens_bitmap);
+  if (s_current_hour_ones_bitmap) gbitmap_destroy(s_current_hour_ones_bitmap);
+  if (s_current_minute_tens_bitmap) gbitmap_destroy(s_current_minute_tens_bitmap);
+  if (s_current_minute_ones_bitmap) gbitmap_destroy(s_current_minute_ones_bitmap);
+  if (s_current_month_tens_bitmap) gbitmap_destroy(s_current_month_tens_bitmap);
+  if (s_current_month_ones_bitmap) gbitmap_destroy(s_current_month_ones_bitmap);
+  if (s_current_day_tens_bitmap) gbitmap_destroy(s_current_day_tens_bitmap);
+  if (s_current_day_ones_bitmap) gbitmap_destroy(s_current_day_ones_bitmap);
   
-  // Destroy bitmap layers and resources for date display
-  if (s_month_tens_bitmap) gbitmap_destroy(s_month_tens_bitmap);
-  if (s_month_ones_bitmap) gbitmap_destroy(s_month_ones_bitmap);
-  if (s_day_tens_bitmap) gbitmap_destroy(s_day_tens_bitmap);
-  if (s_day_ones_bitmap) gbitmap_destroy(s_day_ones_bitmap);
+  // Clean up test digit bitmaps
+  for (int i = 0; i < 10; i++) {
+    if (s_test_digit_bitmaps[i]) gbitmap_destroy(s_test_digit_bitmaps[i]);
+  }
   
+  // Destroy sprite sheet bitmaps
+  if (s_time_sprite_bitmap) gbitmap_destroy(s_time_sprite_bitmap);
+  if (s_date_sprite_bitmap) gbitmap_destroy(s_date_sprite_bitmap);
+  
+  // Destroy bitmap layers
   bitmap_layer_destroy(s_hour_tens_layer);
   bitmap_layer_destroy(s_hour_ones_layer);
   bitmap_layer_destroy(s_minute_tens_layer);
@@ -1069,6 +848,13 @@ static void prv_window_unload(Window *window) {
   bitmap_layer_destroy(s_month_ones_layer);
   bitmap_layer_destroy(s_day_tens_layer);
   bitmap_layer_destroy(s_day_ones_layer);
+  
+  // Destroy test digit layers (only destroy non-NULL layers)
+  for (int i = 0; i < 10; i++) {
+    if (s_test_digit_layers[i]) {
+      bitmap_layer_destroy(s_test_digit_layers[i]);
+    }
+  }
   text_layer_destroy(s_temperature_layer);
   text_layer_destroy(s_humidity_layer);
   text_layer_destroy(s_minmax_layer);

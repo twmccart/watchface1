@@ -27,16 +27,16 @@ for scale, name in sizes:
         # Just copy the original
         resized_img = img.copy()
     else:
-        # Resize using nearest neighbor to maintain crisp pixels
-        resized_img = img.resize((new_width, new_height), Image.NEAREST)
+        # Resize using Lanczos for smooth curves and high quality
+        resized_img = img.resize((new_width, new_height), Image.LANCZOS)
     
-    # Save with descriptive names
-    out_path = os.path.join(OUT_DIR, f'stolen_numbers_{name}_{new_width//10}w_{new_height}h.png')
+    # Save with descriptive names showing actual dimensions
+    out_path = os.path.join(OUT_DIR, f'stolen_numbers_{name}_{new_width}x{new_height}.png')
     resized_img.save(out_path, optimize=True)
     
-    digit_width = new_width // 10
-    print(f"Created {name}: {new_width}x{new_height} ({digit_width}px per digit) -> {out_path}")
+    element_width = new_width / 11  # 11 elements total (0-9 + empty space)
+    print(f"Created {name}: {new_width}x{new_height} ({element_width:.1f}px per element) -> {out_path}")
 
-print("\nResized sprite sheets created!")
-print("Each contains 10 digits (0-9) arranged horizontally")
-print("Use digit_index * digit_width as x-offset to select specific digits")
+print("\nResized sprite sheets created with smooth scaling!")
+print("Each contains 11 elements (digits 0-9 + empty space) arranged horizontally")
+print("Use digit_index * element_spacing as x-offset to select specific digits")
