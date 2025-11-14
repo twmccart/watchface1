@@ -14,7 +14,7 @@
 #include "weather.h"
 
 // Dark mode flag (user option to toggle later). true = black background, white text.
-static bool s_dark_mode = false;
+static bool s_dark_mode = true;
 
 static GFont s_icon_font = NULL;
 static GFont s_sky_font = NULL; // FONT_WEATHER_12 for the small sky glyph
@@ -23,14 +23,14 @@ static GFont s_sky_font = NULL; // FONT_WEATHER_12 for the small sky glyph
 #define SPRITE_LARGE_DIGIT_WIDTH 40   // Display width for each digit (to fit cleanly)
 #define SPRITE_LARGE_DIGIT_HEIGHT 60
 #define SPRITE_LARGE_SHEET_WIDTH 480  // Total width of large sprite sheet
-#define SPRITE_LARGE_ELEMENT_WIDTH 34  // Actual width of each element in sprite (17*2)
-#define SPRITE_LARGE_ELEMENT_SPACING 40  // Spacing between element starts (34+6)
+#define SPRITE_LARGE_ELEMENT_WIDTH 36  // Actual width of each element in sprite (reduced by 1px)
+#define SPRITE_LARGE_ELEMENT_SPACING 44  // Spacing between element starts (36+8)
 
 #define SPRITE_MEDIUM_DIGIT_WIDTH 20  // Display width for each digit (to fit cleanly)
 #define SPRITE_MEDIUM_DIGIT_HEIGHT 30
 #define SPRITE_MEDIUM_SHEET_WIDTH 240  // Total width of medium sprite sheet
-#define SPRITE_MEDIUM_ELEMENT_WIDTH 17  // Actual width of each element in sprite  
-#define SPRITE_MEDIUM_ELEMENT_SPACING 20  // Spacing between element starts (17+3)
+#define SPRITE_MEDIUM_ELEMENT_WIDTH 18  // Actual width of each element in sprite
+#define SPRITE_MEDIUM_ELEMENT_SPACING 22  // Spacing between element starts (18+4) - calibrated from experiments
 
 #define SPRITE_ELEMENT_COUNT 11      // Number of elements in sprite (0-9 + empty space)
 
@@ -154,11 +154,11 @@ static void set_digit_from_sprite(BitmapLayer *layer, int digit, GBitmap *sprite
   // Use actual element width and spacing from sprite sheet layout
   int element_width, element_spacing;
   if (digit_width == SPRITE_MEDIUM_DIGIT_WIDTH) {
-    element_width = SPRITE_MEDIUM_ELEMENT_WIDTH;  // 17px
-    element_spacing = 21;  // 17px digit + 3px gap + 1px adjustment = 21px total spacing
+    element_width = SPRITE_MEDIUM_ELEMENT_WIDTH;
+    element_spacing = SPRITE_MEDIUM_ELEMENT_SPACING;
   } else {
-    element_width = SPRITE_LARGE_ELEMENT_WIDTH;   // 34px  
-    element_spacing = 42;  // 34px digit + 6px gap + 2px adjustment = 42px total spacing
+    element_width = SPRITE_LARGE_ELEMENT_WIDTH;
+    element_spacing = SPRITE_LARGE_ELEMENT_SPACING;
   }
   int x_offset = digit * element_spacing;
   
@@ -218,8 +218,6 @@ static void prv_update_time() {
   set_digit_from_sprite(s_minute_tens_layer, minute_tens, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_minute_tens_bitmap);
   set_digit_from_sprite(s_minute_ones_layer, minute_ones, s_time_sprite_bitmap, SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT, &s_current_minute_ones_bitmap);
 
-  // DEBUG: Skip date logic while debugging sprites
-  /*
   // Month and day for date complication (bitmap digits)
   int month = tick_time->tm_mon + 1; // tm_mon is 0-11, we want 1-12
   int day = tick_time->tm_mday;
@@ -249,7 +247,6 @@ static void prv_update_time() {
   }
   
   set_digit_from_sprite(s_day_ones_layer, day_ones, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_current_day_ones_bitmap);
-  */
 }
 
 /* Callback from weather module when new data arrives */
@@ -532,7 +529,7 @@ static void prv_window_load(Window *window) {
   }
 
   // Large bitmap digit layout: keep original 96px total width, space digits better
-  const int DIGIT_W = 34;          // Display width for each digit bitmap (closer to actual 17px * 2)
+  const int DIGIT_W = SPRITE_LARGE_ELEMENT_WIDTH;   // Use calibrated element width (36px)
   const int DIGIT_H = SPRITE_LARGE_DIGIT_HEIGHT;    // Height for each digit (60px)
   const int BLOCK_GAP = 1;         // Vertical gap between hour and minute (minimal gap)
   const int BLOCK_W = 96;          // Keep original total width for 2-digit block (2/3 of 144px screen)
@@ -559,19 +556,17 @@ static void prv_window_load(Window *window) {
   s_hour_ones_layer = bitmap_layer_create(GRect(hour_x + hour_left_margin + DIGIT_W + TIME_PADDING, hour_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_hour_ones_layer));
   
-  // Minute block: TEMPORARILY HIDDEN for debugging
+  // Minute block
   int minute_x = bounds.size.w - BLOCK_W;  // Right-aligned with screen edge
   int minute_y = time_start_y + DIGIT_H + BLOCK_GAP;
   
   // Minute tens digit - start with left margin  
   s_minute_tens_layer = bitmap_layer_create(GRect(minute_x + hour_left_margin, minute_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_minute_tens_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_minute_tens_layer), true); // HIDDEN FOR DEBUG
   
   // Minute ones digit - add padding after tens digit
   s_minute_ones_layer = bitmap_layer_create(GRect(minute_x + hour_left_margin + DIGIT_W + TIME_PADDING, minute_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_minute_ones_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_minute_ones_layer), true); // HIDDEN FOR DEBUG
   
   // Load sprite sheet bitmaps FIRST - before creating any test digits or date digits
   s_time_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_STOLEN_NUMBERS_LARGE);
@@ -652,9 +647,9 @@ static void prv_window_load(Window *window) {
 
   // Month and day complication to the right of the time blocks (bitmap digits)
   // Time blocks: 0-96 (restored), Available right space: 96-144 = 48 pixels
-  const int DATE_DIGIT_W = SPRITE_MEDIUM_DIGIT_WIDTH;     // Use actual medium sprite width (17px)
+  const int DATE_DIGIT_W = SPRITE_MEDIUM_DIGIT_WIDTH;     // Use actual medium sprite width (20px)
   const int DATE_DIGIT_H = SPRITE_MEDIUM_DIGIT_HEIGHT;    // Use actual medium sprite height (30px)  
-  const int DATE_PADDING = SPRITE_MEDIUM_ELEMENT_SPACING; // 3px padding between date digits
+  const int DATE_PADDING = 4; // Small padding between date digits (20+4+20=44px fits in 48px)
   int date_x = BLOCK_W;            // Start right after 96px time blocks
   
   // Calculate month and day heights and positions for alignment with 60px digit height
@@ -663,53 +658,24 @@ static void prv_window_load(Window *window) {
   // Month digits: top half aligned with hour top
   int month_y = hour_y;
   
-  // Month tens digit (hidden for months 1-9) - TEMPORARILY HIDDEN FOR DEBUG
+  // Month tens digit (hidden for months 1-9)
   s_month_tens_layer = bitmap_layer_create(GRect(date_x, month_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_month_tens_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), true); // HIDDEN FOR DEBUG
   
-  // Month ones digit - add padding after tens digit - TEMPORARILY HIDDEN FOR DEBUG
+  // Month ones digit - add padding after tens digit
   s_month_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W + DATE_PADDING, month_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_month_ones_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_month_ones_layer), true); // HIDDEN FOR DEBUG
   
   // Day digits: bottom half aligned with hour bottom
   int day_y = hour_y + half_h;
   
-  // Day tens digit (hidden for days 1-9) - TEMPORARILY HIDDEN FOR DEBUG
+  // Day tens digit (hidden for days 1-9)
   s_day_tens_layer = bitmap_layer_create(GRect(date_x, day_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_tens_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), true); // HIDDEN FOR DEBUG
   
-  // Day ones digit - add padding after tens digit - TEMPORARILY HIDDEN FOR DEBUG
+  // Day ones digit - add padding after tens digit
   s_day_ones_layer = bitmap_layer_create(GRect(date_x + DATE_DIGIT_W + DATE_PADDING, day_y, DATE_DIGIT_W, DATE_DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_ones_layer));
-  layer_set_hidden(bitmap_layer_get_layer(s_day_ones_layer), true); // HIDDEN FOR DEBUG
-  
-  // DEBUG: Create test digit display - show digits 0-4 with full width using medium sprite
-  const int TEST_Y = bounds.size.h - 50; // Near bottom of screen
-  const int AVAILABLE_WIDTH = bounds.size.w; // Full screen width (144px)
-  const int TEST_DIGIT_COUNT = 5; // Only digits 0-4
-  const int DIGIT_DISPLAY_WIDTH = SPRITE_MEDIUM_DIGIT_WIDTH; // Full 20px width for each digit
-  const int DIGIT_SPACING = AVAILABLE_WIDTH / TEST_DIGIT_COUNT; // 28.8px per digit slot
-  
-  APP_LOG(APP_LOG_LEVEL_INFO, "Creating test digits: TEST_Y=%d, AVAILABLE_WIDTH=%d, DIGIT_SPACING=%d, DIGIT_DISPLAY_WIDTH=%d", TEST_Y, AVAILABLE_WIDTH, DIGIT_SPACING, DIGIT_DISPLAY_WIDTH);
-  
-  for (int i = 0; i < TEST_DIGIT_COUNT; i++) {
-    int test_x = i * DIGIT_SPACING + (DIGIT_SPACING - DIGIT_DISPLAY_WIDTH) / 2; // Center digit in its slot
-    APP_LOG(APP_LOG_LEVEL_INFO, "Test digit %d at x=%d", i, test_x);
-    s_test_digit_layers[i] = bitmap_layer_create(GRect(test_x, TEST_Y, DIGIT_DISPLAY_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT));
-    layer_add_child(window_layer, bitmap_layer_get_layer(s_test_digit_layers[i]));
-    
-    // Set each digit using our sprite function
-    set_digit_from_sprite(s_test_digit_layers[i], i, s_date_sprite_bitmap, SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT, &s_test_digit_bitmaps[i]);
-  }
-  
-  // Initialize remaining test digit layers to NULL since we're only using 0-4
-  for (int i = TEST_DIGIT_COUNT; i < 10; i++) {
-    s_test_digit_layers[i] = NULL;
-    s_test_digit_bitmaps[i] = NULL;
-  }
   
   // Arrange top-row: center the sky icon and temperature as a group, put
   // humidity on the left, and min/max on the right.
