@@ -111,6 +111,9 @@ static BitmapLayer *s_minute_tens_layer, *s_minute_ones_layer;
 static BitmapLayer *s_month_tens_layer, *s_month_ones_layer;
 static BitmapLayer *s_day_tens_layer,   *s_day_ones_layer;
 
+// Top weather bar: humidity (left) + high/low (right)
+static TextLayer *s_humidity_layer, *s_hilo_layer;
+
 // Bottom row: sunrise/sunset times + status (city name)
 static TextLayer *s_sunrise_layer, *s_sunset_layer, *s_status_layer;
 
@@ -120,9 +123,20 @@ static Complication s_comp[COMP_COUNT];
 // Persistent storage keys
 #define PERSIST_KEY_DARK_MODE  1
 #define PERSIST_KEY_VIBRATE_BT 2
+#define PERSIST_KEY_TEMP       3
+#define PERSIST_KEY_SUNRISE    4
+#define PERSIST_KEY_SUNSET     5
+#define PERSIST_KEY_ICON_CODE  6
+#define PERSIST_KEY_WEATHER_AT 7
+#define PERSIST_KEY_HUMIDITY   8
+#define PERSIST_KEY_MIN        9
+#define PERSIST_KEY_MAX        10
 
 // State
 static int      s_temp          = 0;
+static int      s_humidity      = 0;
+static int      s_min           = 0;
+static int      s_max           = 0;
 static time_t   s_sunrise       = 0;
 static time_t   s_sunset        = 0;
 static bool     s_bt_connected  = true;
@@ -130,16 +144,21 @@ static int      s_battery_level = 100;
 static bool     s_prev_bt_connected = true;
 static bool     s_vibrate_bt    = true;  // vibrate on BT connect/disconnect
 
-// Weather data is considered stale after this many seconds without an update
-#define WEATHER_STALE_SECONDS (60 * 60)  // 1 hour
+// Staleness thresholds
+#define WEATHER_STALE_SECONDS (30 * 60)       // 30 min: temp/icon shown stale after this
+#define SUNTIME_STALE_SECONDS (24 * 60 * 60)  // 1 day: sunrise/sunset kept until next day
 
 static time_t s_weather_received_at = 0;  // 0 = never received
+
+static AppTimer *s_suntime_hide_timer = NULL;
 
 // String buffers
 static char s_icon_code_buf[8];
 static char s_city_buf[32];
 static char s_sunrise_buf[32];
 static char s_sunset_buf[32];
+static char s_humidity_buf[8];
+static char s_hilo_buf[16];
 
 enum {
   KEY_WEATHER_TEMP     = 0,
@@ -361,14 +380,10 @@ static void prv_update_time(void) {
   int day_tens   = day / 10;
   int day_ones   = day % 10;
 
-  if (month_tens > 0) {
-    layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), false);
-    set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_sprite_bitmap,
-                          SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                          &s_current_month_tens_bitmap);
-  } else {
-    layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), true);
-  }
+  layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), false);
+  set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_sprite_bitmap,
+                        SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
+                        &s_current_month_tens_bitmap);
   set_digit_from_sprite(s_month_ones_layer, month_ones, s_date_sprite_bitmap,
                         SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
                         &s_current_month_ones_bitmap);
@@ -386,14 +401,53 @@ static void prv_update_time(void) {
                         &s_current_day_ones_bitmap);
 }
 
+static void prv_update_weather_bar(void) {
+  bool stale = !s_weather_received_at ||
+               (time(NULL) - s_weather_received_at > WEATHER_STALE_SECONDS);
+  if (stale) {
+    snprintf(s_humidity_buf, sizeof(s_humidity_buf), "--%%" );
+    snprintf(s_hilo_buf,     sizeof(s_hilo_buf),     "--/--");
+  } else {
+    snprintf(s_humidity_buf, sizeof(s_humidity_buf), "%d%%",      s_humidity);
+    snprintf(s_hilo_buf,     sizeof(s_hilo_buf),     "%d/%d",     s_min, s_max);
+  }
+  if (s_humidity_layer) text_layer_set_text(s_humidity_layer, s_humidity_buf);
+  if (s_hilo_layer)     text_layer_set_text(s_hilo_layer,     s_hilo_buf);
+}
+
+static void prv_suntime_hide_cb(void *data) {
+  s_suntime_hide_timer = NULL;
+  if (s_humidity_layer) layer_set_hidden(text_layer_get_layer(s_humidity_layer), true);
+  if (s_hilo_layer)     layer_set_hidden(text_layer_get_layer(s_hilo_layer),     true);
+  if (s_sunrise_layer)  layer_set_hidden(text_layer_get_layer(s_sunrise_layer),  true);
+  if (s_sunset_layer)   layer_set_hidden(text_layer_get_layer(s_sunset_layer),   true);
+  if (s_status_layer)   layer_set_hidden(text_layer_get_layer(s_status_layer),   true);
+}
+
+static void prv_suntime_show(void) {
+  if (s_humidity_layer) layer_set_hidden(text_layer_get_layer(s_humidity_layer), false);
+  if (s_hilo_layer)     layer_set_hidden(text_layer_get_layer(s_hilo_layer),     false);
+  if (s_sunrise_layer)  layer_set_hidden(text_layer_get_layer(s_sunrise_layer),  false);
+  if (s_sunset_layer)   layer_set_hidden(text_layer_get_layer(s_sunset_layer),   false);
+  if (s_status_layer)   layer_set_hidden(text_layer_get_layer(s_status_layer),   false);
+  if (s_suntime_hide_timer) app_timer_cancel(s_suntime_hide_timer);
+  s_suntime_hide_timer = app_timer_register(60 * 1000, prv_suntime_hide_cb, NULL);
+}
+
+static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
+  prv_suntime_show();
+}
+
 // Update sunrise/sunset text and city name status
 static void prv_update_suntime_and_status(void) {
+  bool sun_stale = !s_weather_received_at ||
+                   (time(NULL) - s_weather_received_at > SUNTIME_STALE_SECONDS);
   char rbuf[16] = "--:--", sbuf[16] = "--:--";
-  if (s_sunrise) {
+  if (!sun_stale && s_sunrise) {
     struct tm *tm = localtime(&s_sunrise);
     if (tm) strftime(rbuf, sizeof(rbuf), "%H:%M", tm);
   }
-  if (s_sunset) {
+  if (!sun_stale && s_sunset) {
     struct tm *tm = localtime(&s_sunset);
     if (tm) strftime(sbuf, sizeof(sbuf), "%H:%M", tm);
   }
@@ -414,9 +468,12 @@ static void prv_update_suntime_and_status(void) {
 // Callback from weather module when new data arrives
 static void weather_module_cb(const weather_data_t *data, void *ctx) {
   if (!data) return;
-  s_temp    = data->temp;
-  s_sunrise = data->sunrise;
-  s_sunset  = data->sunset;
+  s_temp     = data->temp;
+  s_humidity = data->humidity;
+  s_min      = data->min;
+  s_max      = data->max;
+  s_sunrise  = data->sunrise;
+  s_sunset   = data->sunset;
   strncpy(s_city_buf, data->city, sizeof(s_city_buf));
   s_city_buf[sizeof(s_city_buf)-1] = '\0';
   if (data->icon_code[0]) {
@@ -426,6 +483,15 @@ static void weather_module_cb(const weather_data_t *data, void *ctx) {
     s_icon_code_buf[0] = '\0';
   }
   s_weather_received_at = time(NULL);
+  // Persist so data survives watchface process restarts
+  persist_write_int(PERSIST_KEY_TEMP,       s_temp);
+  persist_write_int(PERSIST_KEY_HUMIDITY,   s_humidity);
+  persist_write_int(PERSIST_KEY_MIN,        s_min);
+  persist_write_int(PERSIST_KEY_MAX,        s_max);
+  persist_write_int(PERSIST_KEY_SUNRISE,    (int32_t)s_sunrise);
+  persist_write_int(PERSIST_KEY_SUNSET,     (int32_t)s_sunset);
+  persist_write_string(PERSIST_KEY_ICON_CODE, s_icon_code_buf);
+  persist_write_int(PERSIST_KEY_WEATHER_AT, (int32_t)s_weather_received_at);
   // Receiving data proves BT is connected — sync icon immediately
   if (!s_bt_connected) {
     s_bt_connected = true;
@@ -433,6 +499,7 @@ static void weather_module_cb(const weather_data_t *data, void *ctx) {
   }
   prv_update_complications();
   prv_update_suntime_and_status();
+  prv_update_weather_bar();
 }
 
 static void prv_inbox_received(DictionaryIterator *iter, void *context) {
@@ -647,6 +714,26 @@ static void prv_window_load(Window *window) {
                   GRect(3 * COMP_SLOT_W, minute_y + 2 * COMP_H + glyph_y_off,
                         COMP_SLOT_W, SPRITE_MINI_GLYPH_HEIGHT));
 
+  // ---- Top weather bar: humidity (left) + high/low (right) ----
+  const int TOP_BAR_H      = 14;
+  const int TOP_BAR_MARGIN = -4;
+
+  s_humidity_layer = text_layer_create(
+      GRect(4, TOP_BAR_MARGIN, bounds.size.w / 2 - 4, TOP_BAR_H));
+  text_layer_set_background_color(s_humidity_layer, GColorClear);
+  text_layer_set_text_color(s_humidity_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  text_layer_set_font(s_humidity_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_humidity_layer, GTextAlignmentLeft);
+  layer_add_child(window_layer, text_layer_get_layer(s_humidity_layer));
+
+  s_hilo_layer = text_layer_create(
+      GRect(bounds.size.w / 2, TOP_BAR_MARGIN, bounds.size.w / 2 - 4, TOP_BAR_H));
+  text_layer_set_background_color(s_hilo_layer, GColorClear);
+  text_layer_set_text_color(s_hilo_layer, s_dark_mode ? GColorWhite : GColorBlack);
+  text_layer_set_font(s_hilo_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(s_hilo_layer, GTextAlignmentRight);
+  layer_add_child(window_layer, text_layer_get_layer(s_hilo_layer));
+
   // ---- Sunrise / sunset / status (bottom row) ----
   const int SUN_HEIGHT    = 14;
   const int STATUS_HEIGHT = 18;
@@ -682,9 +769,17 @@ static void prv_window_load(Window *window) {
   text_layer_set_text(s_status_layer, "");
   layer_add_child(window_layer, text_layer_get_layer(s_status_layer));
 
+  // Top/bottom info bars hidden by default; shown on wrist shake for 1 minute
+  layer_set_hidden(text_layer_get_layer(s_humidity_layer), true);
+  layer_set_hidden(text_layer_get_layer(s_hilo_layer),     true);
+  layer_set_hidden(text_layer_get_layer(s_sunrise_layer),  true);
+  layer_set_hidden(text_layer_get_layer(s_sunset_layer),   true);
+  layer_set_hidden(text_layer_get_layer(s_status_layer),   true);
+
   prv_update_time();
   prv_update_complications();
   prv_update_suntime_and_status();
+  prv_update_weather_bar();
 }
 
 static void prv_window_unload(Window *window) {
@@ -726,6 +821,8 @@ static void prv_window_unload(Window *window) {
   bitmap_layer_destroy(s_day_ones_layer);
 
   // Text layers
+  text_layer_destroy(s_humidity_layer);
+  text_layer_destroy(s_hilo_layer);
   text_layer_destroy(s_sunrise_layer);
   text_layer_destroy(s_sunset_layer);
   text_layer_destroy(s_status_layer);
@@ -744,9 +841,11 @@ static void prv_set_dark_mode(bool enable) {
   if (!s_window) return;
   window_set_background_color(s_window, s_dark_mode ? GColorBlack : GColorWhite);
   GColor fg = s_dark_mode ? GColorWhite : GColorBlack;
-  if (s_sunrise_layer) text_layer_set_text_color(s_sunrise_layer, fg);
-  if (s_sunset_layer)  text_layer_set_text_color(s_sunset_layer,  fg);
-  if (s_status_layer)  text_layer_set_text_color(s_status_layer,  fg);
+  if (s_humidity_layer) text_layer_set_text_color(s_humidity_layer, fg);
+  if (s_hilo_layer)     text_layer_set_text_color(s_hilo_layer,     fg);
+  if (s_sunrise_layer)  text_layer_set_text_color(s_sunrise_layer,  fg);
+  if (s_sunset_layer)   text_layer_set_text_color(s_sunset_layer,   fg);
+  if (s_status_layer)   text_layer_set_text_color(s_status_layer,   fg);
   prv_update_time();
 }
 
@@ -756,6 +855,16 @@ static void prv_init(void) {
   }
   if (persist_exists(PERSIST_KEY_VIBRATE_BT)) {
     s_vibrate_bt = persist_read_int(PERSIST_KEY_VIBRATE_BT) ? true : false;
+  }
+  if (persist_exists(PERSIST_KEY_WEATHER_AT)) {
+    s_weather_received_at = (time_t)persist_read_int(PERSIST_KEY_WEATHER_AT);
+    s_temp     = persist_read_int(PERSIST_KEY_TEMP);
+    s_humidity = persist_read_int(PERSIST_KEY_HUMIDITY);
+    s_min      = persist_read_int(PERSIST_KEY_MIN);
+    s_max      = persist_read_int(PERSIST_KEY_MAX);
+    s_sunrise  = (time_t)persist_read_int(PERSIST_KEY_SUNRISE);
+    s_sunset   = (time_t)persist_read_int(PERSIST_KEY_SUNSET);
+    persist_read_string(PERSIST_KEY_ICON_CODE, s_icon_code_buf, sizeof(s_icon_code_buf));
   }
 
   s_window = window_create();
@@ -773,6 +882,7 @@ static void prv_init(void) {
   app_message_open(256, 256);
 
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_handler);
+  accel_tap_service_subscribe(prv_tap_handler);
   connection_service_subscribe((ConnectionHandlers) {
     .pebble_app_connection_handler = prv_bluetooth_callback
   });
@@ -787,6 +897,8 @@ static void prv_init(void) {
 }
 
 static void prv_deinit(void) {
+  accel_tap_service_unsubscribe();
+  if (s_suntime_hide_timer) { app_timer_cancel(s_suntime_hide_timer); s_suntime_hide_timer = NULL; }
   connection_service_unsubscribe();
   battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();

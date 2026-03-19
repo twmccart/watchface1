@@ -108,7 +108,11 @@ function fetchWeather(coords) {
 
       // Open-Meteo returns sunrise/sunset as ISO 8601 strings (local time).
       // Convert to Unix timestamps.
-      var sunrise  = Math.floor(new Date(daily.sunrise[0]).getTime() / 1000);
+      var sunriseToday    = Math.floor(new Date(daily.sunrise[0]).getTime() / 1000);
+      var sunriseTomorrow = Math.floor(new Date(daily.sunrise[1]).getTime() / 1000);
+      var nowSec = Math.floor(Date.now() / 1000);
+      // Show the next upcoming sunrise: today's if it hasn't happened yet, otherwise tomorrow's.
+      var sunrise = (sunriseToday > nowSec) ? sunriseToday : sunriseTomorrow;
       var sunset   = Math.floor(new Date(daily.sunset[0]).getTime() / 1000);
 
       var iconCode = wmoToOwmIcon(wmoCode, isDay);
