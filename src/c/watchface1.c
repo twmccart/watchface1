@@ -893,7 +893,7 @@ static void prv_init(void) {
   prv_battery_callback(battery_state_service_peek());
 
   weather_init(weather_module_cb, NULL);
-  weather_start_periodic(20);
+  weather_force_request();
 }
 
 static void prv_deinit(void) {
@@ -903,7 +903,6 @@ static void prv_deinit(void) {
   battery_state_service_unsubscribe();
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();
-  weather_stop_periodic();
   weather_deinit();
   window_destroy(s_window);
 }
