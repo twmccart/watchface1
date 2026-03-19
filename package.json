@@ -13,10 +13,6 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "aplite",
-      "basalt",
-      "chalk",
-      "diorite",
       "emery",
       "flint"
     ],
@@ -48,14 +44,7 @@
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_24",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["emery", "flint"]
         },
         {
           "type": "font",
@@ -63,14 +52,7 @@
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_16",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["emery", "flint"]
         },
         {
           "type": "font",
@@ -78,144 +60,7 @@
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_12",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[a-zA-Z0-7*()#$%]",
-          "compatibility": "2.7",
-          "file": "fonts/custom-icons.ttf",
-          "name": "FONT_ICONS_20",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_19",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_32",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9: ]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_64",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_16",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_24",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/Blocko.ttf",
-          "name": "FONT_BLOCKO_56",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/leco-regular.ttf",
-          "name": "FONT_LECO_14",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/leco-regular.ttf",
-          "name": "FONT_LECO_21",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/leco-regular.ttf",
-          "name": "FONT_LECO_47",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
+          "targetPlatforms": ["emery", "flint"]
         },
         {
           "type": "font",
@@ -223,482 +68,295 @@
           "compatibility": "2.7",
           "file": "fonts/leco-regular.ttf",
           "name": "FONT_LECO_42",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/konstruct.ttf",
-          "name": "FONT_KONSTRUCT_11",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/konstruct.ttf",
-          "name": "FONT_KONSTRUCT_17",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/konstruct.ttf",
-          "name": "FONT_KONSTRUCT_33",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/ArchivoNarrow-Bold.ttf",
-          "name": "FONT_ARCHIVO_18",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/ArchivoNarrow-Bold.ttf",
-          "name": "FONT_ARCHIVO_28",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/ArchivoNarrow-Bold.ttf",
-          "name": "FONT_ARCHIVO_56",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/OSP-DIN.ttf",
-          "name": "FONT_DIN_20",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/OSP-DIN.ttf",
-          "name": "FONT_DIN_26",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/OSP-DIN.ttf",
-          "name": "FONT_DIN_58",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Prototype.ttf",
-          "name": "FONT_PROTOTYPE_16",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:a-zA-Z.+%!()/= -]",
-          "compatibility": "2.7",
-          "file": "fonts/Prototype.ttf",
-          "name": "FONT_PROTOTYPE_22",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
-        },
-        {
-          "type": "font",
-          "characterRegex": "[0-9:]",
-          "compatibility": "2.7",
-          "file": "fonts/Prototype.ttf",
-          "name": "FONT_PROTOTYPE_48",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite"
-          ]
+          "targetPlatforms": ["emery", "flint"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMG_MININUMBERS.png",
           "name": "IMG_MININUMBERS",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/IMG_MININUMBERS.png",
+          "name": "IMG_MININUMBERS",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BTICO.png",
           "name": "IMAGE_BTICO",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/IMAGE_BTICO.png",
+          "name": "IMAGE_BTICO",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BTICOOFF.png",
           "name": "IMAGE_BTICOOFF",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/IMAGE_BTICOOFF.png",
+          "name": "IMAGE_BTICOOFF",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BATTERY.png",
           "name": "IMAGE_BATTERY",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/IMAGE_BATTERY.png",
+          "name": "IMAGE_BATTERY",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLEAR_DAY.png",
           "name": "WEATHER_CLEAR_DAY",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_CLEAR_DAY.png",
+          "name": "WEATHER_CLEAR_DAY",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLEAR_NIGHT.png",
           "name": "WEATHER_CLEAR_NIGHT",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_CLEAR_NIGHT.png",
+          "name": "WEATHER_CLEAR_NIGHT",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_PARTLY_CLOUDY_DAY.png",
           "name": "WEATHER_PARTLY_CLOUDY_DAY",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_PARTLY_CLOUDY_DAY.png",
+          "name": "WEATHER_PARTLY_CLOUDY_DAY",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_PARTLY_CLOUDY_NIGHT.png",
           "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_PARTLY_CLOUDY_NIGHT.png",
+          "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLOUDY.png",
           "name": "WEATHER_CLOUDY",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_CLOUDY.png",
+          "name": "WEATHER_CLOUDY",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN.png",
           "name": "WEATHER_RAIN",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_RAIN.png",
+          "name": "WEATHER_RAIN",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_DRIZZLE.png",
           "name": "WEATHER_DRIZZLE",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_DRIZZLE.png",
+          "name": "WEATHER_DRIZZLE",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SLEET.png",
           "name": "WEATHER_SLEET",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_SLEET.png",
+          "name": "WEATHER_SLEET",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SNOW.png",
           "name": "WEATHER_SNOW",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_SNOW.png",
+          "name": "WEATHER_SNOW",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SNOW_SLEET.png",
           "name": "WEATHER_SNOW_SLEET",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_SNOW_SLEET.png",
+          "name": "WEATHER_SNOW_SLEET",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN_SNOW.png",
           "name": "WEATHER_RAIN_SNOW",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_RAIN_SNOW.png",
+          "name": "WEATHER_RAIN_SNOW",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN_SLEET.png",
           "name": "WEATHER_RAIN_SLEET",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_RAIN_SLEET.png",
+          "name": "WEATHER_RAIN_SLEET",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_THUNDER.png",
           "name": "WEATHER_THUNDER",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_THUNDER.png",
+          "name": "WEATHER_THUNDER",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_WIND.png",
           "name": "WEATHER_WIND",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_WIND.png",
+          "name": "WEATHER_WIND",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_FOG.png",
           "name": "WEATHER_FOG",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_FOG.png",
+          "name": "WEATHER_FOG",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_HOT.png",
           "name": "WEATHER_HOT",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_HOT.png",
+          "name": "WEATHER_HOT",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_COLD.png",
           "name": "WEATHER_COLD",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/WEATHER_COLD.png",
+          "name": "WEATHER_COLD",
+          "targetPlatforms": ["emery"]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/ICON_CLOUD_ERROR.png",
           "name": "ICON_CLOUD_ERROR",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
         },
         {
           "type": "bitmap",
-          "file": "images/Flint/IMG_BIGNUMBERS-fixed.png",
+          "file": "images/Emery/ICON_CLOUD_ERROR.png",
+          "name": "ICON_CLOUD_ERROR",
+          "targetPlatforms": ["emery"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Flint/IMG_BIGNUMBERS.png",
           "name": "IMG_BIGNUMBERS_FIXED",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
         },
         {
           "type": "bitmap",
-          "file": "images/Flint/IMG_MIDINUMBERS-fixed.png",
+          "file": "images/Emery/IMG_BIGNUMBERS.png",
+          "name": "IMG_BIGNUMBERS_FIXED",
+          "targetPlatforms": ["emery"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Flint/IMG_MIDINUMBERS.png",
           "name": "IMG_MIDINUMBERS_FIXED",
-          "targetPlatforms": [
-            "aplite",
-            "basalt",
-            "chalk",
-            "diorite",
-            "emery",
-            "flint"
-          ]
+          "targetPlatforms": ["flint"]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/Emery/IMG_MIDNUMBERS.png",
+          "name": "IMG_MIDINUMBERS_FIXED",
+          "targetPlatforms": ["emery"]
         }
       ]
     },

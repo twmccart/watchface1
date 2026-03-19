@@ -18,42 +18,55 @@
 #include "message_keys.auto.h"
 #include "weather.h"
 
-static bool s_dark_mode = true;
+static bool   s_dark_mode       = true;
+// Both Emery and Flint sprites use the same convention: digit pixels are
+// transparent (GColorClear), background is opaque black. GCompOpSet skips
+// transparent pixels, so the layer background color (white) shows through the
+// digit shapes. This matches the original BlockFace approach on all platforms.
+static GColor s_time_digit_bg = {.argb = 0b11111111};  // GColorWhite
+static GColor s_date_digit_bg = {.argb = 0b11111111};  // GColorWhite
 
 static GFont s_icon_font = NULL;  // FONT_WEATHER_24 (kept for future use)
 static GFont s_sky_font = NULL;   // FONT_WEATHER_12 (kept for future use)
 
-// Large sprite sheet (IMG_BIGNUMBERS-fixed.png): 480x64
-//   10 digits (0-9), each 48px wide x 64px tall, no padding — stride = 48px
-#define SPRITE_LARGE_DIGIT_WIDTH     48
-#define SPRITE_LARGE_DIGIT_HEIGHT    64
-#define SPRITE_LARGE_ELEMENT_WIDTH   48
-#define SPRITE_LARGE_ELEMENT_SPACING 48
+// Platform-specific sprite sheet dimensions.
+// Emery (200x228) uses larger sprites than Flint (144x168).
+#ifdef PBL_PLATFORM_EMERY
+  // Large: IMG_BIGNUMBERS.png 660x88 — 10 digits at 66x88px, stride=66
+  #define SPRITE_LARGE_DIGIT_WIDTH     66
+  #define SPRITE_LARGE_DIGIT_HEIGHT    88
+  #define SPRITE_LARGE_ELEMENT_WIDTH   66
+  #define SPRITE_LARGE_ELEMENT_SPACING 66
+  // Medium: IMG_MIDNUMBERS.png 330x41 — 11 frames at 30x41px, stride=30
+  #define SPRITE_MEDIUM_DIGIT_WIDTH     30
+  #define SPRITE_MEDIUM_DIGIT_HEIGHT    41
+  #define SPRITE_MEDIUM_ELEMENT_WIDTH   30
+  #define SPRITE_MEDIUM_ELEMENT_SPACING 30
+  // Mini: IMG_MININUMBERS.png 200x20 — 13 elements, stride=14, height=20
+  #define SPRITE_MINI_ELEMENT_SPACING 14
+  #define SPRITE_MINI_GLYPH_HEIGHT    20
+  #define SPRITE_MINI_SHEET_W         200
+#else
+  // Flint: IMG_BIGNUMBERS-fixed.png 480x64 — 10 digits at 48x64px, stride=48
+  #define SPRITE_LARGE_DIGIT_WIDTH     48
+  #define SPRITE_LARGE_DIGIT_HEIGHT    64
+  #define SPRITE_LARGE_ELEMENT_WIDTH   48
+  #define SPRITE_LARGE_ELEMENT_SPACING 48
+  // Medium: IMG_MIDINUMBERS-fixed.png 240x30 — 11 elements, 18px wide, stride=22
+  #define SPRITE_MEDIUM_DIGIT_WIDTH     20
+  #define SPRITE_MEDIUM_DIGIT_HEIGHT    30
+  #define SPRITE_MEDIUM_ELEMENT_WIDTH   18
+  #define SPRITE_MEDIUM_ELEMENT_SPACING 22
+  // Mini: IMG_MININUMBERS.png 130x13 — 13 elements, stride=10, height=13
+  #define SPRITE_MINI_ELEMENT_SPACING 10
+  #define SPRITE_MINI_GLYPH_HEIGHT    13
+  #define SPRITE_MINI_SHEET_W         130
+#endif
 
-// Medium sprite sheet (IMG_MIDINUMBERS-fixed.png): 240x30
-//   11 elements: digits 0-9 then a blank (cols 216-239).
-//   Each glyph is 18px wide; stride is 22px (18px content + 4px gap).
-//   Element n starts at x = n * 22.
-#define SPRITE_MEDIUM_DIGIT_WIDTH     20   // display/layer width
-#define SPRITE_MEDIUM_DIGIT_HEIGHT    30
-#define SPRITE_MEDIUM_ELEMENT_WIDTH   18   // actual glyph pixel width
-#define SPRITE_MEDIUM_ELEMENT_SPACING 22   // stride between element starts
-
-// Mini sprite sheet (IMG_MININUMBERS.png): 130x13
-//   13 elements: digits 0-9, then hyphen/dash (index 10, for negative temps),
-//   then an unknown glyph resembling a misshapen 'k' (index 11, purpose unknown),
-//   then a trailing blank (index 12).
-//   Stride is ~10px per element; each glyph is approximately 7-8px wide.
-//   Element n starts at x = n * 10.
-//
-//   NOTE: 1-bit sub-bitmaps require byte-aligned x offsets (multiples of 8),
-//   so gbitmap_create_as_sub_bitmap() cannot be used for arbitrary glyph indices.
-//   Instead, each glyph slot uses a 10px-wide viewport Layer as a clip container,
-//   with a full 130px BitmapLayer of the sprite sheet inside. Repositioning the
-//   inner layer via layer_set_frame() selects which glyph is visible.
-#define SPRITE_MINI_ELEMENT_SPACING 10
-#define SPRITE_MINI_GLYPH_HEIGHT    13
-#define SPRITE_MINI_SHEET_W         130
+// NOTE: 1-bit sub-bitmaps require byte-aligned x offsets on b&w displays.
+// The mini sprite uses a clip+sprite layer hierarchy instead of sub-bitmaps:
+// each glyph slot is a COMP_SLOT_W-wide viewport Layer clipping a full-width
+// BitmapLayer of the sprite sheet. layer_set_frame() selects the glyph.
 
 // Complication constants
 #define COMP_COUNT       4
@@ -199,7 +212,8 @@ static uint32_t prv_icon_code_to_resource(const char *icon_code) {
 
 // Set a digit bitmap layer to display a specific digit from a sprite sheet
 static void set_digit_from_sprite(BitmapLayer *layer, int digit, GBitmap *sprite_bitmap,
-                                   int digit_width, int digit_height, GBitmap **cleanup_ref) {
+                                   int digit_width, int digit_height, GBitmap **cleanup_ref,
+                                   GColor bg_color) {
   if (!layer || !sprite_bitmap || digit < 0 || digit > 9) return;
 
   if (cleanup_ref && *cleanup_ref) {
@@ -221,7 +235,7 @@ static void set_digit_from_sprite(BitmapLayer *layer, int digit, GBitmap *sprite
   GBitmap *sub = gbitmap_create_as_sub_bitmap(sprite_bitmap, digit_bounds);
   if (sub) {
     bitmap_layer_set_bitmap(layer, sub);
-    bitmap_layer_set_background_color(layer, GColorClear);
+    bitmap_layer_set_background_color(layer, bg_color);
     if (cleanup_ref) *cleanup_ref = sub;
   }
 }
@@ -360,17 +374,17 @@ static void prv_update_time(void) {
     layer_set_hidden(bitmap_layer_get_layer(s_hour_tens_layer), false);
     set_digit_from_sprite(s_hour_tens_layer, hour_tens, s_time_sprite_bitmap,
                           SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                          &s_current_hour_tens_bitmap);
+                          &s_current_hour_tens_bitmap, s_time_digit_bg);
   }
   set_digit_from_sprite(s_hour_ones_layer, hour_ones, s_time_sprite_bitmap,
                         SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_hour_ones_bitmap);
+                        &s_current_hour_ones_bitmap, s_time_digit_bg);
   set_digit_from_sprite(s_minute_tens_layer, minute_tens, s_time_sprite_bitmap,
                         SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_minute_tens_bitmap);
+                        &s_current_minute_tens_bitmap, s_time_digit_bg);
   set_digit_from_sprite(s_minute_ones_layer, minute_ones, s_time_sprite_bitmap,
                         SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_minute_ones_bitmap);
+                        &s_current_minute_ones_bitmap, s_time_digit_bg);
 
   int month = tick_time->tm_mon + 1;
   int day   = tick_time->tm_mday;
@@ -383,22 +397,22 @@ static void prv_update_time(void) {
   layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), false);
   set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_sprite_bitmap,
                         SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_month_tens_bitmap);
+                        &s_current_month_tens_bitmap, s_date_digit_bg);
   set_digit_from_sprite(s_month_ones_layer, month_ones, s_date_sprite_bitmap,
                         SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_month_ones_bitmap);
+                        &s_current_month_ones_bitmap, s_date_digit_bg);
 
   if (day_tens > 0) {
     layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), false);
     set_digit_from_sprite(s_day_tens_layer, day_tens, s_date_sprite_bitmap,
                           SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                          &s_current_day_tens_bitmap);
+                          &s_current_day_tens_bitmap, s_date_digit_bg);
   } else {
     layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), true);
   }
   set_digit_from_sprite(s_day_ones_layer, day_ones, s_date_sprite_bitmap,
                         SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_day_ones_bitmap);
+                        &s_current_day_ones_bitmap, s_date_digit_bg);
 }
 
 static void prv_update_weather_bar(void) {
@@ -609,13 +623,13 @@ static void prv_window_load(Window *window) {
   // ---- Large digit block layout ----
   // Each digit is SPRITE_LARGE_ELEMENT_WIDTH (48px) wide x SPRITE_LARGE_DIGIT_HEIGHT (64px) tall.
   // Two-digit block = BLOCK_W wide (2 digits side by side with optional padding).
-  const int DIGIT_W  = SPRITE_LARGE_ELEMENT_WIDTH;
-  const int DIGIT_H  = SPRITE_LARGE_DIGIT_HEIGHT;
-  const int BLOCK_W  = 96;
+  const int DIGIT_W   = SPRITE_LARGE_ELEMENT_WIDTH;
+  const int DIGIT_H   = SPRITE_LARGE_DIGIT_HEIGHT;
+  const int BLOCK_W   = SPRITE_LARGE_ELEMENT_SPACING * 2;
   const int BLOCK_GAP = 8;
 
-  // Pad the two digits within the 96px block
-  const int TIME_PADDING = (BLOCK_W - (DIGIT_W * 2)) / 2;  // 0px if DIGIT_W=48
+  // Pad the two digits within the block
+  const int TIME_PADDING = (BLOCK_W - (DIGIT_W * 2)) / 2;
   const int LEFT_MARGIN  = (BLOCK_W - (DIGIT_W * 2) - TIME_PADDING) / 2;
 
   // Center both blocks vertically on screen
@@ -639,6 +653,11 @@ static void prv_window_load(Window *window) {
 
   s_minute_ones_layer = bitmap_layer_create(GRect(minute_x + LEFT_MARGIN + DIGIT_W + TIME_PADDING, minute_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_minute_ones_layer));
+
+  bitmap_layer_set_compositing_mode(s_hour_tens_layer,   GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_hour_ones_layer,   GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_minute_tens_layer, GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_minute_ones_layer, GCompOpSet);
 
   // ---- Load sprite sheet bitmaps ----
   s_time_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMG_BIGNUMBERS_FIXED);
@@ -672,6 +691,11 @@ static void prv_window_load(Window *window) {
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_tens_layer));
   s_day_ones_layer = bitmap_layer_create(GRect(date_x + DATE_W + DATE_PADDING, day_y, DATE_W, DATE_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_day_ones_layer));
+
+  bitmap_layer_set_compositing_mode(s_month_tens_layer, GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_month_ones_layer, GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_day_tens_layer,   GCompOpSet);
+  bitmap_layer_set_compositing_mode(s_day_ones_layer,   GCompOpSet);
 
   // ---- Complications (bottom-left, alongside the minute block) ----
   // 4 rows × COMP_H (16px) = 64px = DIGIT_H, filling the full minute block height.
