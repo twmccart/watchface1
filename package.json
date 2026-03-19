@@ -390,7 +390,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMG_MININUMBERS.png",
+          "file": "images/Flint/IMG_MININUMBERS.png",
           "name": "IMG_MININUMBERS",
           "targetPlatforms": [
             "aplite",
@@ -403,7 +403,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMAGE_BTICO.png",
+          "file": "images/Flint/IMAGE_BTICO.png",
           "name": "IMAGE_BTICO",
           "targetPlatforms": [
             "aplite",
@@ -416,7 +416,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMAGE_BTICOOFF.png",
+          "file": "images/Flint/IMAGE_BTICOOFF.png",
           "name": "IMAGE_BTICOOFF",
           "targetPlatforms": [
             "aplite",
@@ -429,7 +429,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMAGE_BATTERY.png",
+          "file": "images/Flint/IMAGE_BATTERY.png",
           "name": "IMAGE_BATTERY",
           "targetPlatforms": [
             "aplite",
@@ -442,7 +442,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_CLEAR_DAY.png",
+          "file": "images/Flint/WEATHER_CLEAR_DAY.png",
           "name": "WEATHER_CLEAR_DAY",
           "targetPlatforms": [
             "aplite",
@@ -455,7 +455,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_CLEAR_NIGHT.png",
+          "file": "images/Flint/WEATHER_CLEAR_NIGHT.png",
           "name": "WEATHER_CLEAR_NIGHT",
           "targetPlatforms": [
             "aplite",
@@ -468,7 +468,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_PARTLY_CLOUDY_DAY.png",
+          "file": "images/Flint/WEATHER_PARTLY_CLOUDY_DAY.png",
           "name": "WEATHER_PARTLY_CLOUDY_DAY",
           "targetPlatforms": [
             "aplite",
@@ -481,7 +481,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_PARTLY_CLOUDY_NIGHT.png",
+          "file": "images/Flint/WEATHER_PARTLY_CLOUDY_NIGHT.png",
           "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
           "targetPlatforms": [
             "aplite",
@@ -494,7 +494,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_CLOUDY.png",
+          "file": "images/Flint/WEATHER_CLOUDY.png",
           "name": "WEATHER_CLOUDY",
           "targetPlatforms": [
             "aplite",
@@ -507,7 +507,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_RAIN.png",
+          "file": "images/Flint/WEATHER_RAIN.png",
           "name": "WEATHER_RAIN",
           "targetPlatforms": [
             "aplite",
@@ -520,7 +520,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_DRIZZLE.png",
+          "file": "images/Flint/WEATHER_DRIZZLE.png",
           "name": "WEATHER_DRIZZLE",
           "targetPlatforms": [
             "aplite",
@@ -533,7 +533,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_SLEET.png",
+          "file": "images/Flint/WEATHER_SLEET.png",
           "name": "WEATHER_SLEET",
           "targetPlatforms": [
             "aplite",
@@ -546,7 +546,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_SNOW.png",
+          "file": "images/Flint/WEATHER_SNOW.png",
           "name": "WEATHER_SNOW",
           "targetPlatforms": [
             "aplite",
@@ -559,7 +559,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_SNOW_SLEET.png",
+          "file": "images/Flint/WEATHER_SNOW_SLEET.png",
           "name": "WEATHER_SNOW_SLEET",
           "targetPlatforms": [
             "aplite",
@@ -572,7 +572,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_RAIN_SNOW.png",
+          "file": "images/Flint/WEATHER_RAIN_SNOW.png",
           "name": "WEATHER_RAIN_SNOW",
           "targetPlatforms": [
             "aplite",
@@ -585,7 +585,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_RAIN_SLEET.png",
+          "file": "images/Flint/WEATHER_RAIN_SLEET.png",
           "name": "WEATHER_RAIN_SLEET",
           "targetPlatforms": [
             "aplite",
@@ -598,7 +598,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_THUNDER.png",
+          "file": "images/Flint/WEATHER_THUNDER.png",
           "name": "WEATHER_THUNDER",
           "targetPlatforms": [
             "aplite",
@@ -611,7 +611,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_WIND.png",
+          "file": "images/Flint/WEATHER_WIND.png",
           "name": "WEATHER_WIND",
           "targetPlatforms": [
             "aplite",
@@ -624,7 +624,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_FOG.png",
+          "file": "images/Flint/WEATHER_FOG.png",
           "name": "WEATHER_FOG",
           "targetPlatforms": [
             "aplite",
@@ -637,7 +637,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_HOT.png",
+          "file": "images/Flint/WEATHER_HOT.png",
           "name": "WEATHER_HOT",
           "targetPlatforms": [
             "aplite",
@@ -650,7 +650,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/WEATHER_COLD.png",
+          "file": "images/Flint/WEATHER_COLD.png",
           "name": "WEATHER_COLD",
           "targetPlatforms": [
             "aplite",
@@ -663,7 +663,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/ICON_CLOUD_ERROR.png",
+          "file": "images/Flint/ICON_CLOUD_ERROR.png",
           "name": "ICON_CLOUD_ERROR",
           "targetPlatforms": [
             "aplite",
@@ -676,7 +676,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMG_BIGNUMBERS-fixed.png",
+          "file": "images/Flint/IMG_BIGNUMBERS-fixed.png",
           "name": "IMG_BIGNUMBERS_FIXED",
           "targetPlatforms": [
             "aplite",
@@ -689,7 +689,7 @@
         },
         {
           "type": "bitmap",
-          "file": "images/IMG_MIDINUMBERS-fixed.png",
+          "file": "images/Flint/IMG_MIDINUMBERS-fixed.png",
           "name": "IMG_MIDINUMBERS_FIXED",
           "targetPlatforms": [
             "aplite",

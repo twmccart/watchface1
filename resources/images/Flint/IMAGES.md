@@ -8,7 +8,7 @@ These images were extracted from the compiled resource pack (`app_resources.pbpa
 
 Most images are **1-bit grayscale** — white pixels are the drawn content, black is background. They are designed to be composited onto a black watchface background.
 
-Two images (`IMG_BIGNUMBERS` and `IMG_MIDINUMBERS`) are **1-bit indexed PNGs** with a palette and transparency. In these files, the white digit pixels are marked transparent and the black background is opaque — this is how they were stored for Pebble compositing. Two corrected versions (`IMG_BIGNUMBERS-fixed.png` and `IMG_MIDINUMBERS-fixed.png`) have the transparency inverted so the digit shapes are opaque white on a transparent background, which is more useful for typical compositing workflows.
+Two images (`IMG_BIGNUMBERS` and `IMG_MIDNUMBERS`) are **1-bit indexed PNGs** with a palette and transparency. In these files, the white digit pixels are marked transparent and the black background is opaque — this is how they were stored for Pebble compositing. Two corrected versions (`IMG_BIGNUMBERS-fixed.png` and `IMG_MIDNUMBERS-fixed.png`) have the transparency inverted so the digit shapes are opaque white on a transparent background, which is more useful for typical compositing workflows.
 
 ---
 
@@ -19,8 +19,8 @@ These are horizontal sprite sheets containing all characters in a single image. 
 | File | Dimensions | Description |
 |------|------------|-------------|
 | `IMG_BIGNUMBERS.png` / `IMG_BIGNUMBERS-fixed.png` | 480×64 | Large digit sprite sheet (source: `num_large.png`). Likely 10 digits (0–9) at 48×64px each. Indexed PNG — use the `-fixed` version for standard compositing. |
-| `IMG_MIDNUMBERS.png` / `IMG_MIDINUMBERS-fixed.png` | 240×30 | Medium digit sprite sheet (source: `num_mid.png`). Likely 10 digits at 24×30px each. Indexed PNG — use the `-fixed` version for standard compositing. |
-| `IMG_MININUMBERS.png` | 130×13 | Small digit sprite sheet (source: `num_mini.png`). Likely 10 digits at 13×13px each. Grayscale, white digits on black — no transparency correction needed. |
+| `IMG_MIDNUMBERS.png` / `IMG_MIDNUMBERS-fixed.png` | 240×30 | Medium digit sprite sheet (source: `num_mid.png`). 10 digits plus a blank at 20×30px each. Indexed PNG — use the `-fixed` version for standard compositing. |
+| `IMG_MININUMBERS.png` | 130×13 | Small digit sprite sheet (source: `num_mini.png`). Likely 10 digits, plus a dash ('-'), plus a weird 'k', followed by a blank at 10×13px each. Grayscale, white digits on black — no transparency correction needed. |
 | `IMG_MINITEXTS.png` | 90×156 | Small text/label character sprite sheet (source: `text_mini.png`). Contains letters and/or symbols used for watchface labels (e.g. day, month, AM/PM). Grayscale. |
 
 ---
