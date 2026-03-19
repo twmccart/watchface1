@@ -558,7 +558,7 @@ static void prv_bluetooth_callback(bool connected) {
   s_prev_bt_connected = connected;
   s_bt_connected = connected;
   prv_comp_update_bt();  // only update BT icon; weather keeps last known data
-  if (s_vibrate_bt && (connected != was_connected)) {
+  if (s_vibrate_bt && was_connected && !connected) {
     vibes_double_pulse();
   }
   if (!was_connected && connected) {
@@ -576,8 +576,7 @@ static void prv_battery_callback(BatteryChargeState state) {
 static void prv_sync_bt_state(void) {
   bool connected = connection_service_peek_pebble_app_connection();
   if (connected != s_bt_connected) {
-    s_bt_connected = connected;
-    prv_comp_update_bt();
+    prv_bluetooth_callback(connected);
   }
 }
 
