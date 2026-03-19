@@ -65,26 +65,26 @@ void weather_handle_inbox(DictionaryIterator *iter) {
   t = dict_find(iter, MESSAGE_KEY_SUNRISE);
   if (t) {
     time_t val = 0;
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) val = (time_t)strtol(t->value->cstring, NULL, 10);
+    if (t->type == TUPLE_CSTRING) val = (time_t)strtol(t->value->cstring, NULL, 10);
     else val = (time_t)t->value->int32;
     if (val != s_data.sunrise) { s_data.sunrise = val; changed = true; }
   }
   t = dict_find(iter, MESSAGE_KEY_SUNSET);
   if (t) {
     time_t val = 0;
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) val = (time_t)strtol(t->value->cstring, NULL, 10);
+    if (t->type == TUPLE_CSTRING) val = (time_t)strtol(t->value->cstring, NULL, 10);
     else val = (time_t)t->value->int32;
     if (val != s_data.sunset) { s_data.sunset = val; changed = true; }
   }
   t = dict_find(iter, MESSAGE_KEY_SKY_COND);
   if (t) {
     int sc = 0;
-    if (t->type == TUPLE_CSTRING && t->value && t->value->cstring) sc = atoi(t->value->cstring);
+    if (t->type == TUPLE_CSTRING) sc = atoi(t->value->cstring);
     else sc = (int)t->value->int32;
     if (sc != s_data.sky_code) { s_data.sky_code = sc; changed = true; }
   }
   t = dict_find(iter, MESSAGE_KEY_CITY);
-  if (t && t->type == TUPLE_CSTRING && t->value && t->value->cstring) {
+  if (t && t->type == TUPLE_CSTRING) {
     if (strncmp(s_data.city, t->value->cstring, sizeof(s_data.city)) != 0) {
       strncpy(s_data.city, t->value->cstring, sizeof(s_data.city));
       s_data.city[sizeof(s_data.city)-1] = '\0';
@@ -92,7 +92,7 @@ void weather_handle_inbox(DictionaryIterator *iter) {
     }
   }
   t = dict_find(iter, MESSAGE_KEY_SKY_GLYPH);
-  if (t && t->type == TUPLE_CSTRING && t->value && t->value->cstring) {
+  if (t && t->type == TUPLE_CSTRING) {
     if (strncmp(s_data.glyph, t->value->cstring, sizeof(s_data.glyph)) != 0) {
       strncpy(s_data.glyph, t->value->cstring, sizeof(s_data.glyph));
       s_data.glyph[sizeof(s_data.glyph)-1] = '\0';
@@ -101,7 +101,7 @@ void weather_handle_inbox(DictionaryIterator *iter) {
     }
   }
   t = dict_find(iter, MESSAGE_KEY_SKY_ICON);
-  if (t && t->type == TUPLE_CSTRING && t->value && t->value->cstring) {
+  if (t && t->type == TUPLE_CSTRING) {
     if (strncmp(s_data.icon_code, t->value->cstring, sizeof(s_data.icon_code)) != 0) {
       strncpy(s_data.icon_code, t->value->cstring, sizeof(s_data.icon_code));
       s_data.icon_code[sizeof(s_data.icon_code)-1] = '\0';
@@ -348,6 +348,7 @@ void weather_run_sample_test(void) {
 /* Map OWM icon code string to a default glyph. This provides a place for the
    user to customize glyphs for each OWM icon. Returns non-empty glyph string
    if mapping exists, otherwise empty string. */
+static const char *map_icon_code_to_glyph(const char *icon_code) __attribute__((unused));
 static const char *map_icon_code_to_glyph(const char *icon_code) {
   if (!icon_code || !icon_code[0]) return "";
   /* Known OWM icon codes to support:

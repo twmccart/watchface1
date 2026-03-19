@@ -2,7 +2,9 @@
   "name": "watchface1",
   "author": "Thomas",
   "version": "0.1.0",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
   "dependencies": {},
   "pebble": {
@@ -22,7 +24,7 @@
       "watchface": true
     },
     "messageKeys": [
-      "WEATHER_TEMP",        
+      "WEATHER_TEMP",
       "WEATHER_HUMIDITY",
       "WEATHER_MIN",
       "WEATHER_MAX",
@@ -35,13 +37,14 @@
       "BATTERY_LEVEL",
       "DATE_STRING",
       "DARK_MODE",
-      "CITY"
+      "CITY",
+      "VIBRATE_BT"
     ],
     "resources": {
       "media": [
         {
           "type": "font",
-          "characterRegex": "[]",
+          "characterRegex": "[\uf003\uf058\uf044\uf00d\uf002\uf0b6\uf008\uf0b2\uf00a\uf00e\uf00c\uf02e\uf086\uf028\uf02a\uf02c\uf031\uf04a\uf036\uf037\uf0b3\uf038\uf03a\uf081\uf013\uf019\uf01a\uf01b\uf01d\uf01b\uf0b5\uf07b\uf04e\uf050\uf076\uf073\uf056\uf015\uf062\uf072\uf0b1\uf051\uf052]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_24",
@@ -56,7 +59,7 @@
         },
         {
           "type": "font",
-          "characterRegex": "[]",
+          "characterRegex": "[\uf051\uf052]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_16",
@@ -71,7 +74,7 @@
         },
         {
           "type": "font",
-          "characterRegex": "[]",
+          "characterRegex": "[\uf003\uf058\uf044\uf00d\uf002\uf0b6\uf008\uf0b2\uf00a\uf00e\uf00c\uf02e\uf086\uf028\uf02a\uf02c\uf031\uf04a\uf036\uf037\uf0b3\uf038\uf03a\uf081\uf013\uf019\uf01a\uf01b\uf01d\uf01b\uf0b5\uf07b\uf04e\uf050\uf076\uf073\uf056\uf015\uf062\uf072\uf0b1\uf051\uf052]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_12",
@@ -387,547 +390,316 @@
         },
         {
           "type": "bitmap",
-          "file": "images/digit_0_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_0_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_1_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_2_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_3_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_4_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_5_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_6_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_7_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_8_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_Alpenkreuzer_30_black.png",
-          "name": "DIGIT_9_ALPENKREUZER_30_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_0_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_1_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_2_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_3_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_4_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_5_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_6_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_7_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_8_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_Alpenkreuzer_30_white.png",
-          "name": "DIGIT_9_ALPENKREUZER_30_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_0_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_1_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_2_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_3_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_4_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_5_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_6_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_7_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_8_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_Alpenkreuzer_60_black.png",
-          "name": "DIGIT_9_ALPENKREUZER_60_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_0_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_1_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_2_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_3_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_4_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_5_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_6_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_7_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_8_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_Alpenkreuzer_60_white.png",
-          "name": "DIGIT_9_ALPENKREUZER_60_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_leco_black.png",
-          "name": "DIGIT_0_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_leco_black.png",
-          "name": "DIGIT_1_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_leco_black.png",
-          "name": "DIGIT_2_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_leco_black.png",
-          "name": "DIGIT_3_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_leco_black.png",
-          "name": "DIGIT_4_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_leco_black.png",
-          "name": "DIGIT_5_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_leco_black.png",
-          "name": "DIGIT_6_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_leco_black.png",
-          "name": "DIGIT_7_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_leco_black.png",
-          "name": "DIGIT_8_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_leco_black.png",
-          "name": "DIGIT_9_LECO_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_leco_white.png",
-          "name": "DIGIT_0_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_leco_white.png",
-          "name": "DIGIT_1_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_leco_white.png",
-          "name": "DIGIT_2_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_leco_white.png",
-          "name": "DIGIT_3_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_leco_white.png",
-          "name": "DIGIT_4_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_leco_white.png",
-          "name": "DIGIT_5_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_leco_white.png",
-          "name": "DIGIT_6_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_leco_white.png",
-          "name": "DIGIT_7_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_leco_white.png",
-          "name": "DIGIT_8_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_leco_white.png",
-          "name": "DIGIT_9_LECO_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_leco_84_bold_black.png",
-          "name": "DIGIT_0_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_leco_84_bold_black.png",
-          "name": "DIGIT_1_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_leco_84_bold_black.png",
-          "name": "DIGIT_2_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_leco_84_bold_black.png",
-          "name": "DIGIT_3_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_leco_84_bold_black.png",
-          "name": "DIGIT_4_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_leco_84_bold_black.png",
-          "name": "DIGIT_5_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_leco_84_bold_black.png",
-          "name": "DIGIT_6_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_leco_84_bold_black.png",
-          "name": "DIGIT_7_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_leco_84_bold_black.png",
-          "name": "DIGIT_8_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_leco_84_bold_black.png",
-          "name": "DIGIT_9_LECO_84_BOLD_BLACK",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_0_leco_84_bold_white.png",
-          "name": "DIGIT_0_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_1_leco_84_bold_white.png",
-          "name": "DIGIT_1_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_2_leco_84_bold_white.png",
-          "name": "DIGIT_2_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_3_leco_84_bold_white.png",
-          "name": "DIGIT_3_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_4_leco_84_bold_white.png",
-          "name": "DIGIT_4_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_5_leco_84_bold_white.png",
-          "name": "DIGIT_5_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_6_leco_84_bold_white.png",
-          "name": "DIGIT_6_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_7_leco_84_bold_white.png",
-          "name": "DIGIT_7_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_8_leco_84_bold_white.png",
-          "name": "DIGIT_8_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        {
-          "type": "bitmap",
-          "file": "images/digit_9_leco_84_bold_white.png",
-          "name": "DIGIT_9_LECO_84_BOLD_WHITE",
-          "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"]
-        },
-        { "type": "bitmap", "file": "images/digit_0_leco_regular_88_black.png", "name": "DIGIT_0_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_leco_regular_88_black.png", "name": "DIGIT_1_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_leco_regular_88_black.png", "name": "DIGIT_2_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_leco_regular_88_black.png", "name": "DIGIT_3_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_leco_regular_88_black.png", "name": "DIGIT_4_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_leco_regular_88_black.png", "name": "DIGIT_5_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_leco_regular_88_black.png", "name": "DIGIT_6_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_leco_regular_88_black.png", "name": "DIGIT_7_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_leco_regular_88_black.png", "name": "DIGIT_8_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_leco_regular_88_black.png", "name": "DIGIT_9_LECO_REGULAR_88_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_0_leco_regular_88_white.png", "name": "DIGIT_0_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_leco_regular_88_white.png", "name": "DIGIT_1_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_leco_regular_88_white.png", "name": "DIGIT_2_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_leco_regular_88_white.png", "name": "DIGIT_3_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_leco_regular_88_white.png", "name": "DIGIT_4_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_leco_regular_88_white.png", "name": "DIGIT_5_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_leco_regular_88_white.png", "name": "DIGIT_6_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_leco_regular_88_white.png", "name": "DIGIT_7_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_leco_regular_88_white.png", "name": "DIGIT_8_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_leco_regular_88_white.png", "name": "DIGIT_9_LECO_REGULAR_88_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_0_entsans_70_black.png", "name": "DIGIT_0_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_entsans_70_black.png", "name": "DIGIT_1_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_entsans_70_black.png", "name": "DIGIT_2_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_entsans_70_black.png", "name": "DIGIT_3_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_entsans_70_black.png", "name": "DIGIT_4_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_entsans_70_black.png", "name": "DIGIT_5_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_entsans_70_black.png", "name": "DIGIT_6_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_entsans_70_black.png", "name": "DIGIT_7_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_entsans_70_black.png", "name": "DIGIT_8_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_entsans_70_black.png", "name": "DIGIT_9_ENTSANS_70_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_0_entsans_70_white.png", "name": "DIGIT_0_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_entsans_70_white.png", "name": "DIGIT_1_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_entsans_70_white.png", "name": "DIGIT_2_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_entsans_70_white.png", "name": "DIGIT_3_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_entsans_70_white.png", "name": "DIGIT_4_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_entsans_70_white.png", "name": "DIGIT_5_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_entsans_70_white.png", "name": "DIGIT_6_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_entsans_70_white.png", "name": "DIGIT_7_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_entsans_70_white.png", "name": "DIGIT_8_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_entsans_70_white.png", "name": "DIGIT_9_ENTSANS_70_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_0_leco_regular_42_black.png", "name": "DIGIT_0_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_leco_regular_42_black.png", "name": "DIGIT_1_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_leco_regular_42_black.png", "name": "DIGIT_2_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_leco_regular_42_black.png", "name": "DIGIT_3_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_leco_regular_42_black.png", "name": "DIGIT_4_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_leco_regular_42_black.png", "name": "DIGIT_5_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_leco_regular_42_black.png", "name": "DIGIT_6_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_leco_regular_42_black.png", "name": "DIGIT_7_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_leco_regular_42_black.png", "name": "DIGIT_8_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_leco_regular_42_black.png", "name": "DIGIT_9_LECO_REGULAR_42_BLACK", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_0_leco_regular_42_white.png", "name": "DIGIT_0_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_1_leco_regular_42_white.png", "name": "DIGIT_1_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_2_leco_regular_42_white.png", "name": "DIGIT_2_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_3_leco_regular_42_white.png", "name": "DIGIT_3_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_4_leco_regular_42_white.png", "name": "DIGIT_4_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_5_leco_regular_42_white.png", "name": "DIGIT_5_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_6_leco_regular_42_white.png", "name": "DIGIT_6_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_7_leco_regular_42_white.png", "name": "DIGIT_7_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_8_leco_regular_42_white.png", "name": "DIGIT_8_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/digit_9_leco_regular_42_white.png", "name": "DIGIT_9_LECO_REGULAR_42_WHITE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/stolen_numbers_small_12w_15h.png", "name": "STOLEN_NUMBERS_SMALL", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/stolen_numbers_medium_24w_30h.png", "name": "STOLEN_NUMBERS_MEDIUM", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] },
-        { "type": "bitmap", "file": "images/stolen_numbers_large_48w_60h.png", "name": "STOLEN_NUMBERS_LARGE", "targetPlatforms": ["aplite", "basalt", "chalk", "diorite", "emery", "flint"] }
+          "file": "images/IMG_MININUMBERS.png",
+          "name": "IMG_MININUMBERS",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/IMAGE_BTICO.png",
+          "name": "IMAGE_BTICO",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/IMAGE_BTICOOFF.png",
+          "name": "IMAGE_BTICOOFF",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/IMAGE_BATTERY.png",
+          "name": "IMAGE_BATTERY",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_CLEAR_DAY.png",
+          "name": "WEATHER_CLEAR_DAY",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_CLEAR_NIGHT.png",
+          "name": "WEATHER_CLEAR_NIGHT",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_PARTLY_CLOUDY_DAY.png",
+          "name": "WEATHER_PARTLY_CLOUDY_DAY",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_PARTLY_CLOUDY_NIGHT.png",
+          "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_CLOUDY.png",
+          "name": "WEATHER_CLOUDY",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_RAIN.png",
+          "name": "WEATHER_RAIN",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_DRIZZLE.png",
+          "name": "WEATHER_DRIZZLE",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_SLEET.png",
+          "name": "WEATHER_SLEET",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_SNOW.png",
+          "name": "WEATHER_SNOW",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_SNOW_SLEET.png",
+          "name": "WEATHER_SNOW_SLEET",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_RAIN_SNOW.png",
+          "name": "WEATHER_RAIN_SNOW",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_RAIN_SLEET.png",
+          "name": "WEATHER_RAIN_SLEET",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_THUNDER.png",
+          "name": "WEATHER_THUNDER",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_WIND.png",
+          "name": "WEATHER_WIND",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_FOG.png",
+          "name": "WEATHER_FOG",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_HOT.png",
+          "name": "WEATHER_HOT",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/WEATHER_COLD.png",
+          "name": "WEATHER_COLD",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/ICON_CLOUD_ERROR.png",
+          "name": "ICON_CLOUD_ERROR",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/IMG_BIGNUMBERS-fixed.png",
+          "name": "IMG_BIGNUMBERS_FIXED",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
+          "file": "images/IMG_MIDINUMBERS-fixed.png",
+          "name": "IMG_MIDINUMBERS_FIXED",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        }
       ]
     },
     "configuration": "data:text/html,%3C%21doctype%20html%3E%0A%3Chtml%3E%0A%3Chead%3E%0A%20%20%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1%22/%3E%0A%20%20%3Cstyle%3Ebody%7Bfont-family%3Asans-serif%3Bpadding%3A16px%7Dlabel%7Bdisplay%3Ablock%3Bmargin%3A12px%200%7D%3C/style%3E%0A%3C/head%3E%0A%3Cbody%3E%0A%20%20%3Ch3%3Ewatchface1%20Settings%3C/h3%3E%0A%20%20%3Clabel%3E%3Cinput%20id%3D%22dark%22%20type%3D%22checkbox%22%3E%20Dark%20mode%20%28black%20background%2C%20white%20text%29%3C/label%3E%0A%20%20%3Cbutton%20id%3D%22save%22%3ESave%3C/button%3E%0A%20%20%3Cscript%3E%0A%20%20%20%20document.getElementById%28%27save%27%29.addEventListener%28%27click%27%2C%20function%28%29%7B%0A%20%20%20%20%20%20var%20d%20%3D%20document.getElementById%28%27dark%27%29.checked%20%3F%20%271%27%20%3A%20%270%27%3B%0A%20%20%20%20%20%20var%20result%20%3D%20%7B%20D%3A%20d%20%7D%3B%0A%20%20%20%20%20%20var%20uri%20%3D%20%27pebblejs%3A//close%23%27%20%2B%20encodeURIComponent%28JSON.stringify%28result%29%29%3B%0A%20%20%20%20%20%20window.location%20%3D%20uri%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%3C/script%3E%0A%3C/body%3E%0A%3C/html%3E%0A"
