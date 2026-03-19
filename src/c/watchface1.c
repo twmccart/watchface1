@@ -29,39 +29,24 @@ static GColor s_date_digit_bg = {.argb = 0b11111111};  // GColorWhite
 static GFont s_icon_font = NULL;  // FONT_WEATHER_24 (kept for future use)
 static GFont s_sky_font = NULL;   // FONT_WEATHER_12 (kept for future use)
 
-// Platform-specific sprite sheet dimensions.
-// Emery (200x228) uses larger sprites than Flint (144x168).
-#ifdef PBL_PLATFORM_EMERY
-  // Large: IMG_BIGNUMBERS.png 660x88 — 10 digits at 66x88px, stride=66
-  #define SPRITE_LARGE_DIGIT_WIDTH     66
-  #define SPRITE_LARGE_DIGIT_HEIGHT    88
-  #define SPRITE_LARGE_ELEMENT_WIDTH   66
-  #define SPRITE_LARGE_ELEMENT_SPACING 66
-  // Medium: IMG_MIDNUMBERS.png 330x41 — 11 frames at 30x41px, stride=30
-  #define SPRITE_MEDIUM_DIGIT_WIDTH     30
-  #define SPRITE_MEDIUM_DIGIT_HEIGHT    41
-  #define SPRITE_MEDIUM_ELEMENT_WIDTH   30
-  #define SPRITE_MEDIUM_ELEMENT_SPACING 30
-  // Mini: IMG_MININUMBERS.png 200x20 — 13 elements, stride=14, height=20
-  #define SPRITE_MINI_ELEMENT_SPACING 14
-  #define SPRITE_MINI_GLYPH_HEIGHT    20
-  #define SPRITE_MINI_SHEET_W         200
-#else
-  // Flint: IMG_BIGNUMBERS-fixed.png 480x64 — 10 digits at 48x64px, stride=48
-  #define SPRITE_LARGE_DIGIT_WIDTH     48
-  #define SPRITE_LARGE_DIGIT_HEIGHT    64
-  #define SPRITE_LARGE_ELEMENT_WIDTH   48
-  #define SPRITE_LARGE_ELEMENT_SPACING 48
-  // Medium: IMG_MIDINUMBERS-fixed.png 240x30 — 11 elements, 18px wide, stride=22
-  #define SPRITE_MEDIUM_DIGIT_WIDTH     20
-  #define SPRITE_MEDIUM_DIGIT_HEIGHT    30
-  #define SPRITE_MEDIUM_ELEMENT_WIDTH   18
-  #define SPRITE_MEDIUM_ELEMENT_SPACING 22
-  // Mini: IMG_MININUMBERS.png 130x13 — 13 elements, stride=10, height=13
-  #define SPRITE_MINI_ELEMENT_SPACING 10
-  #define SPRITE_MINI_GLYPH_HEIGHT    13
-  #define SPRITE_MINI_SHEET_W         130
-#endif
+// Selects a value based on display size: Emery (228px tall) vs Flint (168px).
+// PBL_DISPLAY_HEIGHT is a compile-time constant so this resolves at compile time.
+#define IF_BIG(big, small) (PBL_DISPLAY_HEIGHT > 225 ? (big) : (small))
+
+// Platform-specific sprite sheet dimensions derived via IF_BIG.
+// Emery: Large 66x88 stride=66, Medium 30x41 stride=30, Mini stride=14 h=20
+// Flint:  Large 48x64 stride=48, Medium 18x30 stride=22, Mini stride=10 h=13
+#define SPRITE_LARGE_DIGIT_WIDTH      IF_BIG(66, 48)
+#define SPRITE_LARGE_DIGIT_HEIGHT     IF_BIG(88, 64)
+#define SPRITE_LARGE_ELEMENT_WIDTH    IF_BIG(66, 48)
+#define SPRITE_LARGE_ELEMENT_SPACING  IF_BIG(66, 48)
+#define SPRITE_MEDIUM_DIGIT_WIDTH     IF_BIG(30, 20)
+#define SPRITE_MEDIUM_DIGIT_HEIGHT    IF_BIG(41, 30)
+#define SPRITE_MEDIUM_ELEMENT_WIDTH   IF_BIG(30, 18)
+#define SPRITE_MEDIUM_ELEMENT_SPACING IF_BIG(30, 22)
+#define SPRITE_MINI_ELEMENT_SPACING   IF_BIG(14, 10)
+#define SPRITE_MINI_GLYPH_HEIGHT      IF_BIG(20, 13)
+#define SPRITE_MINI_SHEET_W           IF_BIG(200, 130)
 
 // NOTE: 1-bit sub-bitmaps require byte-aligned x offsets on b&w displays.
 // The mini sprite uses a clip+sprite layer hierarchy instead of sub-bitmaps:
@@ -576,6 +561,14 @@ static void prv_bluetooth_callback(bool connected) {
     vibes_double_pulse();
   }
   if (!was_connected && connected) {
+    // Refresh the AppMessage pipeline on reconnect (mirrors original BlockFace).
+    // This ensures the message channel is ready after the BT gap.
+    app_message_deregister_callbacks();
+    app_message_register_inbox_received(prv_inbox_received);
+    app_message_register_inbox_dropped(prv_inbox_dropped);
+    app_message_register_outbox_failed(prv_outbox_failed);
+    app_message_register_outbox_sent(prv_outbox_sent);
+    app_message_open(256, 256);
     if (!weather_request()) {
       APP_LOG(APP_LOG_LEVEL_INFO, "weather_request skipped (cooldown)");
     }
@@ -626,7 +619,7 @@ static void prv_window_load(Window *window) {
   const int DIGIT_W   = SPRITE_LARGE_ELEMENT_WIDTH;
   const int DIGIT_H   = SPRITE_LARGE_DIGIT_HEIGHT;
   const int BLOCK_W   = SPRITE_LARGE_ELEMENT_SPACING * 2;
-  const int BLOCK_GAP = 8;
+  const int BLOCK_GAP = IF_BIG(11, 8);
 
   // Pad the two digits within the block
   const int TIME_PADDING = (BLOCK_W - (DIGIT_W * 2)) / 2;
@@ -636,7 +629,7 @@ static void prv_window_load(Window *window) {
   int total_time_h  = (DIGIT_H * 2) + BLOCK_GAP;
   int time_start_y  = (bounds.size.h - total_time_h) / 2;
 
-  int hour_x = 0;
+  int hour_x = IF_BIG(6, 4);
   int hour_y = time_start_y;
 
   s_hour_tens_layer = bitmap_layer_create(GRect(hour_x + LEFT_MARGIN, hour_y, DIGIT_W, DIGIT_H));
@@ -645,7 +638,7 @@ static void prv_window_load(Window *window) {
   s_hour_ones_layer = bitmap_layer_create(GRect(hour_x + LEFT_MARGIN + DIGIT_W + TIME_PADDING, hour_y, DIGIT_W, DIGIT_H));
   layer_add_child(window_layer, bitmap_layer_get_layer(s_hour_ones_layer));
 
-  int minute_x = bounds.size.w - BLOCK_W;
+  int minute_x = bounds.size.w - BLOCK_W + 4;
   int minute_y = time_start_y + DIGIT_H + BLOCK_GAP;
 
   s_minute_tens_layer = bitmap_layer_create(GRect(minute_x + LEFT_MARGIN, minute_y, DIGIT_W, DIGIT_H));
@@ -678,7 +671,7 @@ static void prv_window_load(Window *window) {
   const int DATE_W       = SPRITE_MEDIUM_ELEMENT_WIDTH;
   const int DATE_H       = SPRITE_MEDIUM_DIGIT_HEIGHT;
   const int DATE_PADDING = 4;
-  int date_x = BLOCK_W;
+  int date_x = hour_x + BLOCK_W;
 
   int month_y = hour_y;
   s_month_tens_layer = bitmap_layer_create(GRect(date_x, month_y, DATE_W, DATE_H));
@@ -709,7 +702,7 @@ static void prv_window_load(Window *window) {
 
     // Slot 0: icon BitmapLayer
     c->icon_layer = bitmap_layer_create(
-        GRect(0, row_y + glyph_y_off, COMP_SLOT_W, SPRITE_MINI_GLYPH_HEIGHT));
+        GRect(hour_x, row_y + glyph_y_off, COMP_SLOT_W, SPRITE_MINI_GLYPH_HEIGHT));
     bitmap_layer_set_background_color(c->icon_layer, GColorClear);
     layer_add_child(window_layer, bitmap_layer_get_layer(c->icon_layer));
 
@@ -717,7 +710,7 @@ static void prv_window_load(Window *window) {
     for (int s = 0; s < 3; s++) {
       // Clip layer: 10px wide, provides clipping to one glyph slot
       c->glyph_clip[s] = layer_create(
-          GRect((s + 1) * COMP_SLOT_W, row_y + glyph_y_off,
+          GRect(hour_x + (s + 1) * COMP_SLOT_W, row_y + glyph_y_off,
                 COMP_SLOT_W, SPRITE_MINI_GLYPH_HEIGHT));
       layer_add_child(window_layer, c->glyph_clip[s]);
 
@@ -734,7 +727,7 @@ static void prv_window_load(Window *window) {
 
   // BT complication: move icon_layer to slot 4 (rightmost, x = 3*COMP_SLOT_W)
   layer_set_frame(bitmap_layer_get_layer(s_comp[2].icon_layer),
-                  GRect(3 * COMP_SLOT_W, minute_y + 2 * COMP_H + glyph_y_off,
+                  GRect(hour_x + 3 * COMP_SLOT_W, minute_y + 2 * COMP_H + glyph_y_off,
                         COMP_SLOT_W, SPRITE_MINI_GLYPH_HEIGHT));
 
   // ---- Top weather bar: humidity (left) + high/low (right) ----

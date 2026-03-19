@@ -1,4 +1,4 @@
 .lock-waf_linux_build
 build/
 .claude/
-.original/
+original/
