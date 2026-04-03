@@ -75,15 +75,9 @@ static GBitmap *s_time_sprite_bitmap = NULL;
 static GBitmap *s_date_sprite_bitmap = NULL;
 static GBitmap *s_mini_sprite        = NULL;
 
-// Sub-bitmaps for digit display (created from sprite sheets)
-static GBitmap *s_current_hour_tens_bitmap   = NULL;
-static GBitmap *s_current_hour_ones_bitmap   = NULL;
-static GBitmap *s_current_minute_tens_bitmap = NULL;
-static GBitmap *s_current_minute_ones_bitmap = NULL;
-static GBitmap *s_current_month_tens_bitmap  = NULL;
-static GBitmap *s_current_month_ones_bitmap  = NULL;
-static GBitmap *s_current_day_tens_bitmap    = NULL;
-static GBitmap *s_current_day_ones_bitmap    = NULL;
+// Pre-sliced digit sub-bitmaps (created once at load time, not per-tick)
+static GBitmap *s_time_digits[10];  // large digits 0-9
+static GBitmap *s_date_digits[10];  // medium digits 0-9
 
 // Fallback message key defines
 #ifndef MESSAGE_KEY_DARK_MODE
@@ -195,34 +189,12 @@ static uint32_t prv_icon_code_to_resource(const char *icon_code) {
   return RESOURCE_ID_ICON_CLOUD_ERROR;
 }
 
-// Set a digit bitmap layer to display a specific digit from a sprite sheet
-static void set_digit_from_sprite(BitmapLayer *layer, int digit, GBitmap *sprite_bitmap,
-                                   int digit_width, int digit_height, GBitmap **cleanup_ref,
-                                   GColor bg_color) {
-  if (!layer || !sprite_bitmap || digit < 0 || digit > 9) return;
-
-  if (cleanup_ref && *cleanup_ref) {
-    gbitmap_destroy(*cleanup_ref);
-    *cleanup_ref = NULL;
-  }
-
-  int element_width, element_spacing;
-  if (digit_width == SPRITE_MEDIUM_DIGIT_WIDTH) {
-    element_width   = SPRITE_MEDIUM_ELEMENT_WIDTH;
-    element_spacing = SPRITE_MEDIUM_ELEMENT_SPACING;
-  } else {
-    element_width   = SPRITE_LARGE_ELEMENT_WIDTH;
-    element_spacing = SPRITE_LARGE_ELEMENT_SPACING;
-  }
-  int x_offset = digit * element_spacing;
-
-  GRect digit_bounds = GRect(x_offset, 0, element_width, digit_height);
-  GBitmap *sub = gbitmap_create_as_sub_bitmap(sprite_bitmap, digit_bounds);
-  if (sub) {
-    bitmap_layer_set_bitmap(layer, sub);
-    bitmap_layer_set_background_color(layer, bg_color);
-    if (cleanup_ref) *cleanup_ref = sub;
-  }
+// Set a digit bitmap layer from a pre-sliced digit array
+static void set_digit_from_sprite(BitmapLayer *layer, int digit,
+                                   GBitmap **digit_array, GColor bg_color) {
+  if (!layer || digit < 0 || digit > 9) return;
+  bitmap_layer_set_bitmap(layer, digit_array[digit]);
+  bitmap_layer_set_background_color(layer, bg_color);
 }
 
 // Set the icon bitmap for a complication slot
@@ -357,19 +329,11 @@ static void prv_update_time(void) {
     layer_set_hidden(bitmap_layer_get_layer(s_hour_tens_layer), true);
   } else {
     layer_set_hidden(bitmap_layer_get_layer(s_hour_tens_layer), false);
-    set_digit_from_sprite(s_hour_tens_layer, hour_tens, s_time_sprite_bitmap,
-                          SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                          &s_current_hour_tens_bitmap, s_time_digit_bg);
+    set_digit_from_sprite(s_hour_tens_layer, hour_tens, s_time_digits, s_time_digit_bg);
   }
-  set_digit_from_sprite(s_hour_ones_layer, hour_ones, s_time_sprite_bitmap,
-                        SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_hour_ones_bitmap, s_time_digit_bg);
-  set_digit_from_sprite(s_minute_tens_layer, minute_tens, s_time_sprite_bitmap,
-                        SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_minute_tens_bitmap, s_time_digit_bg);
-  set_digit_from_sprite(s_minute_ones_layer, minute_ones, s_time_sprite_bitmap,
-                        SPRITE_LARGE_DIGIT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT,
-                        &s_current_minute_ones_bitmap, s_time_digit_bg);
+  set_digit_from_sprite(s_hour_ones_layer,   hour_ones,   s_time_digits, s_time_digit_bg);
+  set_digit_from_sprite(s_minute_tens_layer, minute_tens, s_time_digits, s_time_digit_bg);
+  set_digit_from_sprite(s_minute_ones_layer, minute_ones, s_time_digits, s_time_digit_bg);
 
   int month = tick_time->tm_mon + 1;
   int day   = tick_time->tm_mday;
@@ -380,24 +344,11 @@ static void prv_update_time(void) {
   int day_ones   = day % 10;
 
   layer_set_hidden(bitmap_layer_get_layer(s_month_tens_layer), false);
-  set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_sprite_bitmap,
-                        SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_month_tens_bitmap, s_date_digit_bg);
-  set_digit_from_sprite(s_month_ones_layer, month_ones, s_date_sprite_bitmap,
-                        SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_month_ones_bitmap, s_date_digit_bg);
+  set_digit_from_sprite(s_month_tens_layer, month_tens, s_date_digits, s_date_digit_bg);
+  set_digit_from_sprite(s_month_ones_layer, month_ones, s_date_digits, s_date_digit_bg);
 
-  if (day_tens > 0) {
-    layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), false);
-    set_digit_from_sprite(s_day_tens_layer, day_tens, s_date_sprite_bitmap,
-                          SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                          &s_current_day_tens_bitmap, s_date_digit_bg);
-  } else {
-    layer_set_hidden(bitmap_layer_get_layer(s_day_tens_layer), true);
-  }
-  set_digit_from_sprite(s_day_ones_layer, day_ones, s_date_sprite_bitmap,
-                        SPRITE_MEDIUM_DIGIT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT,
-                        &s_current_day_ones_bitmap, s_date_digit_bg);
+  set_digit_from_sprite(s_day_tens_layer, day_tens, s_date_digits, s_date_digit_bg);
+  set_digit_from_sprite(s_day_ones_layer, day_ones, s_date_digits, s_date_digit_bg);
 }
 
 static void prv_update_weather_bar(void) {
@@ -656,8 +607,16 @@ static void prv_window_load(Window *window) {
   s_time_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMG_BIGNUMBERS_FIXED);
   s_date_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMG_MIDINUMBERS_FIXED);
   s_mini_sprite        = gbitmap_create_with_resource(RESOURCE_ID_IMG_MININUMBERS);
-  APP_LOG(APP_LOG_LEVEL_INFO, "Sprite loading: time=%p, date=%p, mini=%p",
-          s_time_sprite_bitmap, s_date_sprite_bitmap, s_mini_sprite);
+
+  // Pre-slice all digit sub-bitmaps once at load time (not per-tick)
+  for (int i = 0; i < 10; i++) {
+    s_time_digits[i] = gbitmap_create_as_sub_bitmap(s_time_sprite_bitmap,
+        GRect(i * SPRITE_LARGE_ELEMENT_SPACING, 0,
+              SPRITE_LARGE_ELEMENT_WIDTH, SPRITE_LARGE_DIGIT_HEIGHT));
+    s_date_digits[i] = gbitmap_create_as_sub_bitmap(s_date_sprite_bitmap,
+        GRect(i * SPRITE_MEDIUM_ELEMENT_SPACING, 0,
+              SPRITE_MEDIUM_ELEMENT_WIDTH, SPRITE_MEDIUM_DIGIT_HEIGHT));
+  }
 
   // ---- Load weather fonts (kept for potential future use) ----
   #ifdef RESOURCE_ID_FONT_WEATHER_24
@@ -799,15 +758,11 @@ static void prv_window_load(Window *window) {
 }
 
 static void prv_window_unload(Window *window) {
-  // Sub-bitmaps from sprite sheets
-  if (s_current_hour_tens_bitmap)   gbitmap_destroy(s_current_hour_tens_bitmap);
-  if (s_current_hour_ones_bitmap)   gbitmap_destroy(s_current_hour_ones_bitmap);
-  if (s_current_minute_tens_bitmap) gbitmap_destroy(s_current_minute_tens_bitmap);
-  if (s_current_minute_ones_bitmap) gbitmap_destroy(s_current_minute_ones_bitmap);
-  if (s_current_month_tens_bitmap)  gbitmap_destroy(s_current_month_tens_bitmap);
-  if (s_current_month_ones_bitmap)  gbitmap_destroy(s_current_month_ones_bitmap);
-  if (s_current_day_tens_bitmap)    gbitmap_destroy(s_current_day_tens_bitmap);
-  if (s_current_day_ones_bitmap)    gbitmap_destroy(s_current_day_ones_bitmap);
+  // Pre-sliced digit sub-bitmaps
+  for (int i = 0; i < 10; i++) {
+    gbitmap_destroy(s_time_digits[i]);
+    gbitmap_destroy(s_date_digits[i]);
+  }
 
   // Sprite sheets
   if (s_time_sprite_bitmap) gbitmap_destroy(s_time_sprite_bitmap);
