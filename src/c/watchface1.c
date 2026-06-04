@@ -17,6 +17,8 @@
 #include <stdlib.h>
 #include "message_keys.auto.h"
 #include "weather.h"
+#include "chime.h"
+#include "settings.h"
 
 static bool   s_dark_mode       = true;
 // Both Emery and Flint sprites use the same convention: digit pixels are
@@ -79,19 +81,10 @@ static GBitmap *s_mini_sprite        = NULL;
 static GBitmap *s_time_digits[10];  // large digits 0-9
 static GBitmap *s_date_digits[10];  // medium digits 0-9
 
-// Fallback message key defines
-#ifndef MESSAGE_KEY_DARK_MODE
-#define MESSAGE_KEY_DARK_MODE 10009
-#endif
-#ifndef MESSAGE_KEY_SKY_COND
-#define MESSAGE_KEY_SKY_COND 10006
-#endif
-#ifndef MESSAGE_KEY_CITY
-#define MESSAGE_KEY_CITY 10011
-#endif
 
 static void prv_update_complications(void);
 static void prv_set_dark_mode(bool enable);
+static void prv_invert_bitmap(GBitmap *bmp);
 
 static Window *s_window;
 
@@ -122,7 +115,8 @@ static Complication s_comp[COMP_COUNT];
 #define PERSIST_KEY_WEATHER_AT 7
 #define PERSIST_KEY_HUMIDITY   8
 #define PERSIST_KEY_MIN        9
-#define PERSIST_KEY_MAX        10
+#define PERSIST_KEY_MAX              10
+#define PERSIST_KEY_WEATHER_ON_SHAKE 11
 
 // State
 static int      s_temp          = 0;
@@ -134,7 +128,8 @@ static time_t   s_sunset        = 0;
 static bool     s_bt_connected  = true;
 static int      s_battery_level = 100;
 static bool     s_prev_bt_connected = true;
-static bool     s_vibrate_bt    = true;  // vibrate on BT connect/disconnect
+static bool     s_vibrate_bt         = true;
+static bool     s_weather_on_shake   = false;
 
 // Staleness thresholds
 #define WEATHER_STALE_SECONDS (30 * 60)       // 30 min: temp/icon shown stale after this
@@ -203,6 +198,7 @@ static void prv_comp_set_icon(int ci, uint32_t resource_id) {
   if (!c->icon_layer) return;
   if (c->icon_bitmap) { gbitmap_destroy(c->icon_bitmap); c->icon_bitmap = NULL; }
   c->icon_bitmap = gbitmap_create_with_resource(resource_id);
+  if (!s_dark_mode) prv_invert_bitmap(c->icon_bitmap);
   bitmap_layer_set_bitmap(c->icon_layer, c->icon_bitmap);
 }
 
@@ -385,7 +381,10 @@ static void prv_suntime_show(void) {
 }
 
 static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
-  prv_suntime_show();
+  if (s_weather_on_shake) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "tap: showing weather");
+    prv_suntime_show();
+  }
 }
 
 // Update sunrise/sunset text and city name status
@@ -455,15 +454,14 @@ static void weather_module_cb(const weather_data_t *data, void *ctx) {
 static void prv_inbox_received(DictionaryIterator *iter, void *context) {
   Tuple *tt = dict_read_first(iter);
   while (tt) {
-    if (tt->type == TUPLE_CSTRING) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "INBOX key=%lu val=%s", (unsigned long)tt->key, tt->value->cstring);
-    } else {
-      APP_LOG(APP_LOG_LEVEL_INFO, "INBOX key=%lu int=%ld", (unsigned long)tt->key, (long)tt->value->int32);
-    }
+    APP_LOG(APP_LOG_LEVEL_INFO, "RX key=%lu int=%ld", (unsigned long)tt->key, (long)tt->value->int32);
     tt = dict_read_next(iter);
   }
 
   weather_handle_inbox(iter);
+  chime_handle_inbox(iter);
+
+  dict_read_first(iter);  // reset cursor before dict_find calls
 
   Tuple *t;
   t = dict_find(iter, MESSAGE_KEY_BT_CONNECTED);
@@ -478,8 +476,10 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
   }
 
   t = dict_find(iter, MESSAGE_KEY_DARK_MODE);
+  APP_LOG(APP_LOG_LEVEL_INFO, "DARK_MODE find: %s", t ? "found" : "not found");
   if (t) {
     int dm = (t->type == TUPLE_CSTRING) ? atoi(t->value->cstring) : (int)t->value->int32;
+    APP_LOG(APP_LOG_LEVEL_INFO, "DARK_MODE val=%d", dm);
     prv_set_dark_mode(dm ? true : false);
     persist_write_int(PERSIST_KEY_DARK_MODE, dm);
   }
@@ -488,6 +488,12 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
     int vb = (t->type == TUPLE_CSTRING) ? atoi(t->value->cstring) : (int)t->value->int32;
     s_vibrate_bt = vb ? true : false;
     persist_write_int(PERSIST_KEY_VIBRATE_BT, vb);
+  }
+  t = dict_find(iter, MESSAGE_KEY_WEATHER_ON_SHAKE);
+  if (t) {
+    s_weather_on_shake = (bool)t->value->int32;
+    persist_write_bool(PERSIST_KEY_WEATHER_ON_SHAKE, s_weather_on_shake);
+    APP_LOG(APP_LOG_LEVEL_INFO, "WEATHER_ON_SHAKE=%d", (int)s_weather_on_shake);
   }
 }
 
@@ -541,6 +547,7 @@ static void prv_sync_bt_state(void) {
 static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   prv_update_time();
   prv_sync_bt_state();  // poll — connection_service callbacks are unreliable
+  chime_tick(tick_time);
   if ((tick_time->tm_min % 20) == 0) {
     if (!weather_request()) {
       APP_LOG(APP_LOG_LEVEL_INFO, "weather_request skipped (cooldown, tick)");
@@ -558,11 +565,20 @@ static void prv_window_appear(Window *window) {
   }
 }
 
+static void prv_up_long_click(ClickRecognizerRef recognizer, void *ctx) {
+  settings_open();
+}
+
+static void prv_click_config_provider(void *ctx) {
+  window_long_click_subscribe(BUTTON_ID_UP, 700, prv_up_long_click, NULL);
+}
+
 static void prv_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
   window_set_background_color(window, s_dark_mode ? GColorBlack : GColorWhite);
+  window_set_click_config_provider(window, prv_click_config_provider);
 
   // ---- Large digit block layout ----
   // Each digit is SPRITE_LARGE_ELEMENT_WIDTH (48px) wide x SPRITE_LARGE_DIGIT_HEIGHT (64px) tall.
@@ -608,6 +624,14 @@ static void prv_window_load(Window *window) {
   s_date_sprite_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMG_MIDINUMBERS_FIXED);
   s_mini_sprite        = gbitmap_create_with_resource(RESOURCE_ID_IMG_MININUMBERS);
 
+  // In light mode, invert all sprite sheets before slicing. The sub-bitmaps
+  // share the parent's pixel data, so they reflect the inversion automatically.
+  if (!s_dark_mode) {
+    prv_invert_bitmap(s_time_sprite_bitmap);
+    prv_invert_bitmap(s_date_sprite_bitmap);
+    prv_invert_bitmap(s_mini_sprite);
+  }
+
   // Pre-slice all digit sub-bitmaps once at load time (not per-tick)
   for (int i = 0; i < 10; i++) {
     s_time_digits[i] = gbitmap_create_as_sub_bitmap(s_time_sprite_bitmap,
@@ -629,7 +653,7 @@ static void prv_window_load(Window *window) {
   // ---- Date digits (medium sprites, right of hour block) ----
   const int DATE_W       = SPRITE_MEDIUM_ELEMENT_WIDTH;
   const int DATE_H       = SPRITE_MEDIUM_DIGIT_HEIGHT;
-  const int DATE_PADDING = 4;
+  const int DATE_PADDING = IF_BIG(2, 4);
   int date_x = hour_x + BLOCK_W;
 
   int month_y = hour_y;
@@ -807,9 +831,28 @@ static void prv_window_unload(Window *window) {
   #endif
 }
 
+static void prv_invert_bitmap(GBitmap *bmp) {
+  uint8_t *data = gbitmap_get_data(bmp);
+  int stride    = gbitmap_get_bytes_per_row(bmp);
+  int h         = gbitmap_get_bounds(bmp).size.h;
+  APP_LOG(APP_LOG_LEVEL_INFO, "invert: stride=%d h=%d before[0]=0x%02x", stride, h, data[0]);
+  for (int i = 0; i < stride * h; i++) data[i] ^= 0xFF;
+  APP_LOG(APP_LOG_LEVEL_INFO, "invert: after[0]=0x%02x", data[0]);
+}
+
 static void prv_set_dark_mode(bool enable) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode called: enable=%d cur=%d", (int)enable, (int)s_dark_mode);
+  if (enable == s_dark_mode) return;
   s_dark_mode = enable;
+  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode changing to %d", (int)enable);
   if (!s_window) return;
+  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode inverting sprites");
+  // Invert all sprite sheets — sub-bitmaps share the parent data so they
+  // update automatically. Each call toggles, so calling once per mode change
+  // is correct.
+  prv_invert_bitmap(s_time_sprite_bitmap);
+  prv_invert_bitmap(s_date_sprite_bitmap);
+  prv_invert_bitmap(s_mini_sprite);
   window_set_background_color(s_window, s_dark_mode ? GColorBlack : GColorWhite);
   GColor fg = s_dark_mode ? GColorWhite : GColorBlack;
   if (s_humidity_layer) text_layer_set_text_color(s_humidity_layer, fg);
@@ -818,6 +861,8 @@ static void prv_set_dark_mode(bool enable) {
   if (s_sunset_layer)   text_layer_set_text_color(s_sunset_layer,   fg);
   if (s_status_layer)   text_layer_set_text_color(s_status_layer,   fg);
   prv_update_time();
+  prv_update_complications();
+  layer_mark_dirty(window_get_root_layer(s_window));
 }
 
 static void prv_init(void) {
@@ -826,6 +871,9 @@ static void prv_init(void) {
   }
   if (persist_exists(PERSIST_KEY_VIBRATE_BT)) {
     s_vibrate_bt = persist_read_int(PERSIST_KEY_VIBRATE_BT) ? true : false;
+  }
+  if (persist_exists(PERSIST_KEY_WEATHER_ON_SHAKE)) {
+    s_weather_on_shake = persist_read_bool(PERSIST_KEY_WEATHER_ON_SHAKE);
   }
   if (persist_exists(PERSIST_KEY_WEATHER_AT)) {
     s_weather_received_at = (time_t)persist_read_int(PERSIST_KEY_WEATHER_AT);
@@ -865,6 +913,7 @@ static void prv_init(void) {
 
   weather_init(weather_module_cb, NULL);
   weather_force_request();
+  chime_init();
 }
 
 static void prv_deinit(void) {
@@ -875,6 +924,8 @@ static void prv_deinit(void) {
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();
   weather_deinit();
+  chime_deinit();
+  settings_deinit();
   window_destroy(s_window);
 }
 

@@ -1,24 +1,26 @@
 {
   "name": "watchface1",
   "author": "Thomas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "keywords": [
     "pebble-app"
   ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@rebble/clay": "^1.0.10"
+  },
   "pebble": {
     "displayName": "watchface1",
     "uuid": "cc3e35d1-c5bc-47d0-a539-7c2e0c155ae4",
     "sdkVersion": "3",
     "enableMultiJS": true,
-    "targetPlatforms": [
-      "emery",
-      "flint"
-    ],
+    "targetPlatforms": ["emery", "flint"],
     "watchapp": {
       "watchface": true
     },
+    "capabilities": [
+      "configurable"
+    ],
     "messageKeys": [
       "WEATHER_TEMP",
       "WEATHER_HUMIDITY",
@@ -34,10 +36,21 @@
       "DATE_STRING",
       "DARK_MODE",
       "CITY",
-      "VIBRATE_BT"
+      "VIBRATE_BT",
+      "CHIME_ENABLED",
+      "CHIME_VIBRATE",
+      "QUIET_ENABLED",
+      "QUIET_FROM",
+      "QUIET_TO",
+      "WEATHER_ON_SHAKE"
     ],
     "resources": {
       "media": [
+        {
+          "type": "raw",
+          "name": "CHIME",
+          "file": "audio/casio.raw"
+        },
         {
           "type": "font",
           "characterRegex": "[\uf003\uf058\uf044\uf00d\uf002\uf0b6\uf008\uf0b2\uf00a\uf00e\uf00c\uf02e\uf086\uf028\uf02a\uf02c\uf031\uf04a\uf036\uf037\uf0b3\uf038\uf03a\uf081\uf013\uf019\uf01a\uf01b\uf01d\uf01b\uf0b5\uf07b\uf04e\uf050\uf076\uf073\uf056\uf015\uf062\uf072\uf0b1\uf051\uf052]",
@@ -359,7 +372,6 @@
           "targetPlatforms": ["emery"]
         }
       ]
-    },
-    "configuration": "data:text/html,%3C%21doctype%20html%3E%0A%3Chtml%3E%0A%3Chead%3E%0A%20%20%3Cmeta%20name%3D%22viewport%22%20content%3D%22width%3Ddevice-width%2C%20initial-scale%3D1%22/%3E%0A%20%20%3Cstyle%3Ebody%7Bfont-family%3Asans-serif%3Bpadding%3A16px%7Dlabel%7Bdisplay%3Ablock%3Bmargin%3A12px%200%7D%3C/style%3E%0A%3C/head%3E%0A%3Cbody%3E%0A%20%20%3Ch3%3Ewatchface1%20Settings%3C/h3%3E%0A%20%20%3Clabel%3E%3Cinput%20id%3D%22dark%22%20type%3D%22checkbox%22%3E%20Dark%20mode%20%28black%20background%2C%20white%20text%29%3C/label%3E%0A%20%20%3Cbutton%20id%3D%22save%22%3ESave%3C/button%3E%0A%20%20%3Cscript%3E%0A%20%20%20%20document.getElementById%28%27save%27%29.addEventListener%28%27click%27%2C%20function%28%29%7B%0A%20%20%20%20%20%20var%20d%20%3D%20document.getElementById%28%27dark%27%29.checked%20%3F%20%271%27%20%3A%20%270%27%3B%0A%20%20%20%20%20%20var%20result%20%3D%20%7B%20D%3A%20d%20%7D%3B%0A%20%20%20%20%20%20var%20uri%20%3D%20%27pebblejs%3A//close%23%27%20%2B%20encodeURIComponent%28JSON.stringify%28result%29%29%3B%0A%20%20%20%20%20%20window.location%20%3D%20uri%3B%0A%20%20%20%20%7D%29%3B%0A%20%20%3C/script%3E%0A%3C/body%3E%0A%3C/html%3E%0A"
+    }
   }
 }

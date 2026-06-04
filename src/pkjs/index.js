@@ -1,43 +1,64 @@
 // PKJS companion for watchface1
 // Fetches weather from Open-Meteo (free, no API key required).
-// Sends data to the watch via AppMessage using the same numeric message keys
-// as before, so the watch-side C code needs no changes.
+
+var Clay = require('@rebble/clay');
+var clayConfig = require('./config');
+var clay = new Clay(clayConfig);
 
 var OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 
-// Optional fixed coordinates - set to null to use geolocation. Useful for emulator.
-var OWM_LAT = null; // e.g. 40.7128
-var OWM_LON = null; // e.g. -74.0060
+// Optional fixed coordinates - set to null to use geolocation.
+var OWM_LAT = null;
+var OWM_LON = null;
 
-// === TEST_MODE FLAG ===
-// TEST_MODE is now triggered by a flag rather than a missing API key.
 // Set to true to send a static payload without hitting the network.
 var TEST_MODE = false;
-// === END TEST_MODE FLAG ===
 
-// Map WMO weather interpretation codes to OWM-style icon codes.
-// This lets the watch-side C code keep using its existing icon resource lookup.
-// Day/night variant is determined by the `is_day` field in the API response.
-// WMO codes: https://open-meteo.com/en/docs#weathervariables
+// Message key values — numeric IDs are assigned by position in the messageKeys
+// array in package.json (starting at 10000). When adding or reordering keys
+// there, update these constants to match, and delete build/js/message_keys.json
+// before rebuilding so the SDK regenerates the JS-side Clay lookup table.
+var KEY_WEATHER_TEMP    = 10000;
+var KEY_WEATHER_HUMIDITY= 10001;
+var KEY_WEATHER_MIN     = 10002;
+var KEY_WEATHER_MAX     = 10003;
+var KEY_SUNRISE         = 10004;
+var KEY_SUNSET          = 10005;
+var KEY_SKY_COND        = 10006;
+var KEY_SKY_GLYPH       = 10007;
+var KEY_SKY_ICON        = 10008;
+var KEY_BT_CONNECTED    = 10009;
+var KEY_BATTERY_LEVEL   = 10010;
+var KEY_DATE_STRING     = 10011;
+var KEY_DARK_MODE       = 10012;
+var KEY_CITY            = 10013;
+var KEY_VIBRATE_BT      = 10014;
+var KEY_CHIME_ENABLED   = 10015;
+var KEY_CHIME_VIBRATE   = 10016;
+var KEY_QUIET_ENABLED   = 10017;
+var KEY_QUIET_FROM        = 10018;
+var KEY_QUIET_TO          = 10019;
+var KEY_WEATHER_ON_SHAKE  = 10020;
+
+// Map WMO weather codes to OWM-style icon codes.
 function wmoToOwmIcon(code, isDay) {
   var suffix = isDay ? 'd' : 'n';
-  if (code === 0)                    return '01' + suffix; // Clear sky
-  if (code === 1)                    return '02' + suffix; // Mainly clear
-  if (code === 2)                    return '03' + suffix; // Partly cloudy
-  if (code === 3)                    return '04' + suffix; // Overcast
-  if (code === 45 || code === 48)    return '50' + suffix; // Fog / rime fog
-  if (code === 51 || code === 53 || code === 55) return '09' + suffix; // Drizzle
-  if (code === 56 || code === 57)    return '09' + suffix; // Freezing drizzle
-  if (code === 61 || code === 63 || code === 65) return '10' + suffix; // Rain
-  if (code === 66 || code === 67)    return '10' + suffix; // Freezing rain
-  if (code >= 71 && code <= 77)      return '13' + suffix; // Snow
-  if (code >= 80 && code <= 82)      return '10' + suffix; // Rain showers
-  if (code === 85 || code === 86)    return '13' + suffix; // Snow showers
-  if (code >= 95 && code <= 99)      return '11' + suffix; // Thunderstorm
-  return '03' + suffix; // fallback: partly cloudy
+  if (code === 0)                    return '01' + suffix;
+  if (code === 1)                    return '02' + suffix;
+  if (code === 2)                    return '03' + suffix;
+  if (code === 3)                    return '04' + suffix;
+  if (code === 45 || code === 48)    return '50' + suffix;
+  if (code === 51 || code === 53 || code === 55) return '09' + suffix;
+  if (code === 56 || code === 57)    return '09' + suffix;
+  if (code === 61 || code === 63 || code === 65) return '10' + suffix;
+  if (code === 66 || code === 67)    return '10' + suffix;
+  if (code >= 71 && code <= 77)      return '13' + suffix;
+  if (code >= 80 && code <= 82)      return '10' + suffix;
+  if (code === 85 || code === 86)    return '13' + suffix;
+  if (code >= 95 && code <= 99)      return '11' + suffix;
+  return '03' + suffix;
 }
 
-// Map OWM icon code to a WeatherIcons font glyph (same mapping as before).
 var iconToGlyph = {
   '01d': '\u{F00D}', '02d': '\u{F002}', '03d': '\u{F041}', '04d': '\u{F013}',
   '09d': '\u{F01A}', '10d': '\u{F019}', '11d': '\u{F01E}', '13d': '\u{F01B}', '50d': '\u{F014}',
@@ -45,40 +66,25 @@ var iconToGlyph = {
   '09n': '\u{F01A}', '10n': '\u{F028}', '11n': '\u{F01E}', '13n': '\u{F01B}', '50n': '\u{F014}'
 };
 
-// Helper: send message to watch
 function sendMessage(payload) {
   if (!Pebble || !Pebble.sendAppMessage) return;
-  for (var key in payload) {
-    if (key == '10007') {
-      console.log('SKY_GLYPH (10007): "' + payload[key] + '" (length=' + payload[key].length + ')');
-    } else if (key == '10008') {
-      console.log('SKY_ICON (10008): "' + payload[key] + '"');
-    } else {
-      console.log('Key ' + key + ': ' + payload[key]);
-    }
-  }
-  Pebble.sendAppMessage(payload, function() {
-    console.log('Send successful');
-  }, function(e) {
-    console.log('Send failed: ' + JSON.stringify(e));
-  });
+  Pebble.sendAppMessage(payload,
+    function() { console.log('Send successful'); },
+    function(e) { console.log('Send failed: ' + JSON.stringify(e)); }
+  );
 }
 
 function ajaxHelper(url, cbSuccess, cbError) {
   var xhr = new XMLHttpRequest();
-  xhr.onload = function () {
+  xhr.onload = function() {
     if (xhr.status >= 200 && xhr.status < 300) {
-      try {
-        var json = JSON.parse(xhr.responseText);
-        cbSuccess(json);
-      } catch (e) {
-        cbError(e);
-      }
+      try { cbSuccess(JSON.parse(xhr.responseText)); }
+      catch (e) { cbError(e); }
     } else {
       cbError(new Error('HTTP status ' + xhr.status));
     }
   };
-  xhr.onerror = function (e) { cbError(e); };
+  xhr.onerror = function(e) { cbError(e); };
   xhr.open('GET', url);
   xhr.send();
 }
@@ -94,39 +100,32 @@ function fetchWeather(coords) {
 
   ajaxHelper(url, function(data) {
     try {
-      var cur = data.current;
+      var cur   = data.current;
       var daily = data.daily;
-
       var temp     = Math.round(cur.temperature_2m);
       var humidity = Math.round(cur.relative_humidity_2m);
-      var wmoCode  = cur.weather_code;
       var isDay    = cur.is_day === 1;
-
-      // daily arrays are indexed by day; index 0 is today
       var min      = Math.round(daily.temperature_2m_min[0]);
       var max      = Math.round(daily.temperature_2m_max[0]);
 
-      // Open-Meteo returns sunrise/sunset as ISO 8601 strings (local time).
-      // Convert to Unix timestamps.
+      var nowSec          = Math.floor(Date.now() / 1000);
       var sunriseToday    = Math.floor(new Date(daily.sunrise[0]).getTime() / 1000);
       var sunriseTomorrow = Math.floor(new Date(daily.sunrise[1]).getTime() / 1000);
-      var nowSec = Math.floor(Date.now() / 1000);
-      // Show the next upcoming sunrise: today's if it hasn't happened yet, otherwise tomorrow's.
       var sunrise = (sunriseToday > nowSec) ? sunriseToday : sunriseTomorrow;
-      var sunset   = Math.floor(new Date(daily.sunset[0]).getTime() / 1000);
+      var sunset  = Math.floor(new Date(daily.sunset[0]).getTime() / 1000);
 
-      var iconCode = wmoToOwmIcon(wmoCode, isDay);
+      var iconCode = wmoToOwmIcon(cur.weather_code, isDay);
       var glyph    = iconToGlyph[iconCode] || null;
 
       var payload = {};
-      payload[10000] = temp;
-      payload[10001] = humidity;
-      payload[10002] = min;
-      payload[10003] = max;
-      payload[10004] = sunrise;
-      payload[10005] = sunset;
-      payload[10008] = iconCode;
-      if (glyph) payload[10007] = glyph;
+      payload[KEY_WEATHER_TEMP]     = temp;
+      payload[KEY_WEATHER_HUMIDITY] = humidity;
+      payload[KEY_WEATHER_MIN]      = min;
+      payload[KEY_WEATHER_MAX]      = max;
+      payload[KEY_SUNRISE]          = sunrise;
+      payload[KEY_SUNSET]           = sunset;
+      payload[KEY_SKY_ICON]         = iconCode;
+      if (glyph) payload[KEY_SKY_GLYPH] = glyph;
 
       sendMessage(payload);
     } catch (err) {
@@ -138,28 +137,21 @@ function fetchWeather(coords) {
 }
 
 function fetchAndSend() {
-  // === TEST_MODE BRANCH (fetchAndSend) ===
   if (TEST_MODE) {
-    console.log('TEST_MODE: sending static payload');
     var now = Math.floor(Date.now() / 1000);
-    var payload = {};
-    payload[10000] = 20;
-    payload[10001] = 50;
-    payload[10002] = 15;
-    payload[10003] = 22;
-    payload[10004] = now - 3600 * 6;
-    payload[10005] = now + 3600 * 6;
-    payload[10008] = '01d';
-    payload[10007] = iconToGlyph['01d'] || '';
-    sendMessage(payload);
+    var p = {};
+    p[KEY_WEATHER_TEMP]     = 20;
+    p[KEY_WEATHER_HUMIDITY] = 50;
+    p[KEY_WEATHER_MIN]      = 15;
+    p[KEY_WEATHER_MAX]      = 22;
+    p[KEY_SUNRISE]          = now - 3600 * 6;
+    p[KEY_SUNSET]           = now + 3600 * 6;
+    p[KEY_SKY_ICON]         = '01d';
+    p[KEY_SKY_GLYPH]        = iconToGlyph['01d'] || '';
+    sendMessage(p);
     return;
   }
-  // === END TEST_MODE BRANCH ===
-
-  if (!navigator.geolocation) {
-    console.log('No geolocation');
-    return;
-  }
+  if (!navigator.geolocation) { console.log('No geolocation'); return; }
   navigator.geolocation.getCurrentPosition(function(pos) {
     fetchWeather(pos.coords);
   }, function(err) {
@@ -167,102 +159,40 @@ function fetchAndSend() {
   }, {timeout: 10000});
 }
 
+// Send Clay's stored settings to the watch (used on reconnect).
+// Clay handles showConfiguration and webviewclosed automatically.
+function sendStoredSettings() {
+  var s = clay.getSettings();
+  if (!s || Object.keys(s).length === 0) return;
+  var payload = {};
+  payload[KEY_DARK_MODE]        = s.DARK_MODE        ? 1 : 0;
+  payload[KEY_CHIME_ENABLED]    = s.CHIME_ENABLED    !== false ? 1 : 0;
+  payload[KEY_CHIME_VIBRATE]    = s.CHIME_VIBRATE    ? 1 : 0;
+  payload[KEY_QUIET_ENABLED]    = s.QUIET_ENABLED    ? 1 : 0;
+  payload[KEY_QUIET_FROM]       = s.QUIET_FROM       !== undefined ? parseInt(s.QUIET_FROM,  10) : 22;
+  payload[KEY_QUIET_TO]         = s.QUIET_TO         !== undefined ? parseInt(s.QUIET_TO,    10) : 7;
+  payload[KEY_WEATHER_ON_SHAKE] = s.WEATHER_ON_SHAKE ? 1 : 0;
+  sendMessage(payload);
+}
+
 Pebble.addEventListener('ready', function() {
   console.log('PKJS ready');
-
-  // === TEST_MODE BRANCH (ready) ===
-  if (TEST_MODE) {
-    console.log('TEST_MODE: sending immediate static payload on ready');
-    var now = Math.floor(Date.now() / 1000);
-    var payload = {};
-    payload[10000] = 20;
-    payload[10001] = 50;
-    payload[10002] = 15;
-    payload[10003] = 22;
-    payload[10004] = now - 3600 * 6;
-    payload[10005] = now + 3600 * 6;
-    payload[10008] = '01d';
-    payload[10007] = iconToGlyph['01d'] || '';
-    sendMessage(payload);
-    return;
-  }
-  // === END TEST_MODE BRANCH ===
-
-  // Attempt an immediate live fetch on ready.
+  if (TEST_MODE) { fetchAndSend(); return; }
   if (OWM_LAT !== null && OWM_LON !== null) {
-    console.log('Using fixed coords for initial fetch: ' + OWM_LAT + ',' + OWM_LON);
     fetchWeather({ latitude: OWM_LAT, longitude: OWM_LON });
   } else if (navigator.geolocation) {
-    console.log('Attempting geolocation for initial fetch');
     navigator.geolocation.getCurrentPosition(function(pos) {
       fetchWeather(pos.coords);
     }, function(err) {
       console.log('Geoloc error on ready: ' + err.message);
     }, {timeout: 10000});
-  } else {
-    console.log('No geolocation available and no fixed coords; initial fetch skipped');
   }
-
-  // Send current DARK_MODE setting if available from localStorage
-  try {
-    var dark = localStorage.getItem('dark_mode');
-    if (dark !== null) {
-      var dm = (dark === '1') ? 1 : 0;
-      var payload = {};
-      payload[10009] = dm;
-      sendMessage(payload);
-    }
-  } catch (e) {
-    console.log('No localStorage or error reading dark_mode: ' + e);
-  }
+  sendStoredSettings();
 });
 
 Pebble.addEventListener('appmessage', function(e) {
   console.log('AppMessage received: ' + JSON.stringify(e.payload));
   if (e.payload && (e.payload.REQUEST_WEATHER || e.payload['100'])) {
     fetchAndSend();
-  }
-});
-
-// Settings: show a tiny HTML page with a checkbox for dark mode
-Pebble.addEventListener('showConfiguration', function() {
-  try {
-    var cur = localStorage.getItem('dark_mode') || '1';
-    var checked = (cur === '1') ? 'checked' : '';
-    var html = '' +
-      '<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">' +
-      '<style>body{font-family:sans-serif;padding:16px;} label{display:block;margin:12px 0;}</style>' +
-      '</head><body>' +
-      '<h3>watchface1 Settings</h3>' +
-      '<label><input id="dark" type="checkbox" ' + checked + '> Dark mode (black background, white text)</label>' +
-      '<button id="save">Save</button>' +
-      '<script>' +
-      'document.getElementById("save").addEventListener("click", function(){' +
-      'var d = document.getElementById("dark").checked ? "1" : "0";' +
-      'var result = { D: d };' +
-      'var uri = "pebblejs://close#" + encodeURIComponent(JSON.stringify(result));' +
-      'window.location = uri;' +
-      '});' +
-      '</script></body></html>';
-    var url = 'data:text/html;base64,' + btoa(html);
-    Pebble.openURL(url);
-  } catch (e) {
-    console.log('Failed to open config: ' + e);
-  }
-});
-
-Pebble.addEventListener('webviewclosed', function(e) {
-  if (!e || !e.response) return;
-  try {
-    var data = JSON.parse(decodeURIComponent(e.response));
-    if (data && data.D !== undefined) {
-      var dm = (data.D === '1' || data.D === 1) ? 1 : 0;
-      try { localStorage.setItem('dark_mode', dm ? '1' : '0'); } catch (ex) { }
-      var payload = {};
-      payload[10009] = dm;
-      sendMessage(payload);
-    }
-  } catch (err) {
-    console.log('Config parse error: ' + err);
   }
 });
