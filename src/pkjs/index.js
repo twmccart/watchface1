@@ -1,5 +1,18 @@
-// PKJS companion for watchface1
-// Fetches weather from Open-Meteo (free, no API key required).
+// PKJS companion for watchface1.
+//
+// Responsibilities:
+//   - Fetch weather from Open-Meteo and send to watch via AppMessage.
+//   - Host the phone-side settings UI via @rebble/clay (config.js).
+//     Clay automatically handles showConfiguration and webviewclosed.
+//     Do NOT add handlers for those events here.
+//   - On watch reconnect (ready), resend stored settings via sendStoredSettings().
+//
+// Settings flow: user taps gear in Pebble app → Clay shows config.js UI →
+// user saves → Clay sends all settings as one AppMessage and persists to
+// localStorage → watch C code receives via chime_handle_inbox / prv_inbox_received.
+//
+// See scripts/build.sh — must be used instead of pebble build to avoid stale
+// message key artifacts in the build directory.
 
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
@@ -39,6 +52,8 @@ var KEY_QUIET_ENABLED   = 10017;
 var KEY_QUIET_FROM        = 10018;
 var KEY_QUIET_TO          = 10019;
 var KEY_WEATHER_ON_SHAKE  = 10020;
+var KEY_CHIME_ON_SHAKE    = 10021;
+var KEY_CHIME_RESPECT_QT  = 10022;
 
 // Map WMO weather codes to OWM-style icon codes.
 function wmoToOwmIcon(code, isDay) {
@@ -172,6 +187,8 @@ function sendStoredSettings() {
   payload[KEY_QUIET_FROM]       = s.QUIET_FROM       !== undefined ? parseInt(s.QUIET_FROM,  10) : 22;
   payload[KEY_QUIET_TO]         = s.QUIET_TO         !== undefined ? parseInt(s.QUIET_TO,    10) : 7;
   payload[KEY_WEATHER_ON_SHAKE] = s.WEATHER_ON_SHAKE ? 1 : 0;
+  payload[KEY_CHIME_ON_SHAKE]   = s.CHIME_ON_SHAKE   ? 1 : 0;
+  payload[KEY_CHIME_RESPECT_QT] = s.CHIME_RESPECT_QT ? 1 : 0;
   sendMessage(payload);
 }
 

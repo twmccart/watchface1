@@ -42,7 +42,9 @@
       "QUIET_ENABLED",
       "QUIET_FROM",
       "QUIET_TO",
-      "WEATHER_ON_SHAKE"
+      "WEATHER_ON_SHAKE",
+      "CHIME_ON_SHAKE",
+      "CHIME_RESPECT_QT"
     ],
     "resources": {
       "media": [

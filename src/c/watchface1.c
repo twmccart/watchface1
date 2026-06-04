@@ -18,7 +18,6 @@
 #include "message_keys.auto.h"
 #include "weather.h"
 #include "chime.h"
-#include "settings.h"
 
 static bool   s_dark_mode       = true;
 // Both Emery and Flint sprites use the same convention: digit pixels are
@@ -385,6 +384,7 @@ static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
     APP_LOG(APP_LOG_LEVEL_INFO, "tap: showing weather");
     prv_suntime_show();
   }
+  chime_on_tap();
 }
 
 // Update sunrise/sunset text and city name status
@@ -565,20 +565,11 @@ static void prv_window_appear(Window *window) {
   }
 }
 
-static void prv_up_long_click(ClickRecognizerRef recognizer, void *ctx) {
-  settings_open();
-}
-
-static void prv_click_config_provider(void *ctx) {
-  window_long_click_subscribe(BUTTON_ID_UP, 700, prv_up_long_click, NULL);
-}
-
 static void prv_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(window_layer);
 
   window_set_background_color(window, s_dark_mode ? GColorBlack : GColorWhite);
-  window_set_click_config_provider(window, prv_click_config_provider);
 
   // ---- Large digit block layout ----
   // Each digit is SPRITE_LARGE_ELEMENT_WIDTH (48px) wide x SPRITE_LARGE_DIGIT_HEIGHT (64px) tall.
@@ -924,8 +915,6 @@ static void prv_deinit(void) {
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();
   weather_deinit();
-  chime_deinit();
-  settings_deinit();
   window_destroy(s_window);
 }
 
