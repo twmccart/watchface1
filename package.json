@@ -14,7 +14,10 @@
     "uuid": "cc3e35d1-c5bc-47d0-a539-7c2e0c155ae4",
     "sdkVersion": "3",
     "enableMultiJS": true,
-    "targetPlatforms": ["emery", "flint"],
+    "targetPlatforms": [
+      "emery",
+      "flint"
+    ],
     "watchapp": {
       "watchface": true
     },
@@ -55,27 +58,36 @@
         },
         {
           "type": "font",
-          "characterRegex": "[\uf003\uf058\uf044\uf00d\uf002\uf0b6\uf008\uf0b2\uf00a\uf00e\uf00c\uf02e\uf086\uf028\uf02a\uf02c\uf031\uf04a\uf036\uf037\uf0b3\uf038\uf03a\uf081\uf013\uf019\uf01a\uf01b\uf01d\uf01b\uf0b5\uf07b\uf04e\uf050\uf076\uf073\uf056\uf015\uf062\uf072\uf0b1\uf051\uf052]",
+          "characterRegex": "[]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_24",
-          "targetPlatforms": ["emery", "flint"]
+          "targetPlatforms": [
+            "emery",
+            "flint"
+          ]
         },
         {
           "type": "font",
-          "characterRegex": "[\uf051\uf052]",
+          "characterRegex": "[]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_16",
-          "targetPlatforms": ["emery", "flint"]
+          "targetPlatforms": [
+            "emery",
+            "flint"
+          ]
         },
         {
           "type": "font",
-          "characterRegex": "[\uf003\uf058\uf044\uf00d\uf002\uf0b6\uf008\uf0b2\uf00a\uf00e\uf00c\uf02e\uf086\uf028\uf02a\uf02c\uf031\uf04a\uf036\uf037\uf0b3\uf038\uf03a\uf081\uf013\uf019\uf01a\uf01b\uf01d\uf01b\uf0b5\uf07b\uf04e\uf050\uf076\uf073\uf056\uf015\uf062\uf072\uf0b1\uf051\uf052]",
+          "characterRegex": "[]",
           "compatibility": "2.7",
           "file": "fonts/weathericons-regular-webfont.ttf",
           "name": "FONT_WEATHER_12",
-          "targetPlatforms": ["emery", "flint"]
+          "targetPlatforms": [
+            "emery",
+            "flint"
+          ]
         },
         {
           "type": "font",
@@ -83,295 +95,394 @@
           "compatibility": "2.7",
           "file": "fonts/leco-regular.ttf",
           "name": "FONT_LECO_42",
-          "targetPlatforms": ["emery", "flint"]
+          "targetPlatforms": [
+            "emery",
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMG_MININUMBERS.png",
           "name": "IMG_MININUMBERS",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMG_MININUMBERS.png",
           "name": "IMG_MININUMBERS",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BTICO.png",
           "name": "IMAGE_BTICO",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMAGE_BTICO.png",
           "name": "IMAGE_BTICO",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BTICOOFF.png",
           "name": "IMAGE_BTICOOFF",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMAGE_BTICOOFF.png",
           "name": "IMAGE_BTICOOFF",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMAGE_BATTERY.png",
           "name": "IMAGE_BATTERY",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMAGE_BATTERY.png",
           "name": "IMAGE_BATTERY",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLEAR_DAY.png",
           "name": "WEATHER_CLEAR_DAY",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_CLEAR_DAY.png",
           "name": "WEATHER_CLEAR_DAY",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLEAR_NIGHT.png",
           "name": "WEATHER_CLEAR_NIGHT",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_CLEAR_NIGHT.png",
           "name": "WEATHER_CLEAR_NIGHT",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_PARTLY_CLOUDY_DAY.png",
           "name": "WEATHER_PARTLY_CLOUDY_DAY",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_PARTLY_CLOUDY_DAY.png",
           "name": "WEATHER_PARTLY_CLOUDY_DAY",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_PARTLY_CLOUDY_NIGHT.png",
           "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_PARTLY_CLOUDY_NIGHT.png",
           "name": "WEATHER_PARTLY_CLOUDY_NIGHT",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_CLOUDY.png",
           "name": "WEATHER_CLOUDY",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_CLOUDY.png",
           "name": "WEATHER_CLOUDY",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN.png",
           "name": "WEATHER_RAIN",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_RAIN.png",
           "name": "WEATHER_RAIN",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_DRIZZLE.png",
           "name": "WEATHER_DRIZZLE",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_DRIZZLE.png",
           "name": "WEATHER_DRIZZLE",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SLEET.png",
           "name": "WEATHER_SLEET",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_SLEET.png",
           "name": "WEATHER_SLEET",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SNOW.png",
           "name": "WEATHER_SNOW",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_SNOW.png",
           "name": "WEATHER_SNOW",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_SNOW_SLEET.png",
           "name": "WEATHER_SNOW_SLEET",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_SNOW_SLEET.png",
           "name": "WEATHER_SNOW_SLEET",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN_SNOW.png",
           "name": "WEATHER_RAIN_SNOW",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_RAIN_SNOW.png",
           "name": "WEATHER_RAIN_SNOW",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_RAIN_SLEET.png",
           "name": "WEATHER_RAIN_SLEET",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_RAIN_SLEET.png",
           "name": "WEATHER_RAIN_SLEET",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_THUNDER.png",
           "name": "WEATHER_THUNDER",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_THUNDER.png",
           "name": "WEATHER_THUNDER",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_WIND.png",
           "name": "WEATHER_WIND",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_WIND.png",
           "name": "WEATHER_WIND",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_FOG.png",
           "name": "WEATHER_FOG",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_FOG.png",
           "name": "WEATHER_FOG",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_HOT.png",
           "name": "WEATHER_HOT",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_HOT.png",
           "name": "WEATHER_HOT",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/WEATHER_COLD.png",
           "name": "WEATHER_COLD",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/WEATHER_COLD.png",
           "name": "WEATHER_COLD",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/ICON_CLOUD_ERROR.png",
           "name": "ICON_CLOUD_ERROR",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/ICON_CLOUD_ERROR.png",
           "name": "ICON_CLOUD_ERROR",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMG_BIGNUMBERS.png",
           "name": "IMG_BIGNUMBERS_FIXED",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMG_BIGNUMBERS.png",
           "name": "IMG_BIGNUMBERS_FIXED",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Flint/IMG_MIDINUMBERS.png",
           "name": "IMG_MIDINUMBERS_FIXED",
-          "targetPlatforms": ["flint"]
+          "targetPlatforms": [
+            "flint"
+          ]
         },
         {
           "type": "bitmap",
           "file": "images/Emery/IMG_MIDNUMBERS.png",
           "name": "IMG_MIDINUMBERS_FIXED",
-          "targetPlatforms": ["emery"]
+          "targetPlatforms": [
+            "emery"
+          ]
         }
       ]
     }

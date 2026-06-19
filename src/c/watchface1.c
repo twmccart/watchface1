@@ -381,7 +381,6 @@ static void prv_suntime_show(void) {
 
 static void prv_tap_handler(AccelAxisType axis, int32_t direction) {
   if (s_weather_on_shake) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "tap: showing weather");
     prv_suntime_show();
   }
   chime_on_tap();
@@ -452,12 +451,6 @@ static void weather_module_cb(const weather_data_t *data, void *ctx) {
 }
 
 static void prv_inbox_received(DictionaryIterator *iter, void *context) {
-  Tuple *tt = dict_read_first(iter);
-  while (tt) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RX key=%lu int=%ld", (unsigned long)tt->key, (long)tt->value->int32);
-    tt = dict_read_next(iter);
-  }
-
   weather_handle_inbox(iter);
   chime_handle_inbox(iter);
 
@@ -476,10 +469,8 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
   }
 
   t = dict_find(iter, MESSAGE_KEY_DARK_MODE);
-  APP_LOG(APP_LOG_LEVEL_INFO, "DARK_MODE find: %s", t ? "found" : "not found");
   if (t) {
     int dm = (t->type == TUPLE_CSTRING) ? atoi(t->value->cstring) : (int)t->value->int32;
-    APP_LOG(APP_LOG_LEVEL_INFO, "DARK_MODE val=%d", dm);
     prv_set_dark_mode(dm ? true : false);
     persist_write_int(PERSIST_KEY_DARK_MODE, dm);
   }
@@ -493,7 +484,6 @@ static void prv_inbox_received(DictionaryIterator *iter, void *context) {
   if (t) {
     s_weather_on_shake = (bool)t->value->int32;
     persist_write_bool(PERSIST_KEY_WEATHER_ON_SHAKE, s_weather_on_shake);
-    APP_LOG(APP_LOG_LEVEL_INFO, "WEATHER_ON_SHAKE=%d", (int)s_weather_on_shake);
   }
 }
 
@@ -826,18 +816,13 @@ static void prv_invert_bitmap(GBitmap *bmp) {
   uint8_t *data = gbitmap_get_data(bmp);
   int stride    = gbitmap_get_bytes_per_row(bmp);
   int h         = gbitmap_get_bounds(bmp).size.h;
-  APP_LOG(APP_LOG_LEVEL_INFO, "invert: stride=%d h=%d before[0]=0x%02x", stride, h, data[0]);
   for (int i = 0; i < stride * h; i++) data[i] ^= 0xFF;
-  APP_LOG(APP_LOG_LEVEL_INFO, "invert: after[0]=0x%02x", data[0]);
 }
 
 static void prv_set_dark_mode(bool enable) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode called: enable=%d cur=%d", (int)enable, (int)s_dark_mode);
   if (enable == s_dark_mode) return;
   s_dark_mode = enable;
-  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode changing to %d", (int)enable);
   if (!s_window) return;
-  APP_LOG(APP_LOG_LEVEL_INFO, "set_dark_mode inverting sprites");
   // Invert all sprite sheets — sub-bitmaps share the parent data so they
   // update automatically. Each call toggles, so calling once per mode change
   // is correct.

@@ -26,7 +26,26 @@
 #define KEY_CHIME_ON_SHAKE  25
 #define KEY_CHIME_RESPECT_QT 26
 
-#define CHIME_GAIN 30.0f
+// Audio buffer pre-loaded at init so resource_load never blocks an event handler.
+// s_playing is a separate flag because s_audio_buf is always non-NULL after init.
+static int8_t *s_audio_buf  = NULL;
+static size_t  s_audio_size = 0;
+static bool    s_playing    = false;
+
+// speaker_stream_close() drains remaining data asynchronously; this callback
+// fires when the hardware is done so we can allow the next play.
+static void prv_chime_finished(SpeakerFinishReason reason, void *ctx) {
+  (void)reason; (void)ctx;
+  s_playing = false;
+}
+
+static void prv_play_chime(void);
+
+// Defer playback out of the tap handler via a timer so the handler returns
+// immediately — calling prv_play_chime() directly causes "not responding".
+static void prv_play_chime_timer_cb(void *ctx) {
+  prv_play_chime();
+}
 
 static bool s_chime_enabled;
 static bool s_vibrate_enabled;
@@ -66,39 +85,43 @@ static void prv_play_chime(void) {
   if (s_vibrate_enabled) {
     vibes_short_pulse();
   }
-  if (s_chime_enabled) {
-    ResHandle handle = resource_get_handle(RESOURCE_ID_CHIME);
-    size_t size = resource_size(handle);
-    int8_t *buf = malloc(size);
-    if (!buf) return;
-    resource_load(handle, (uint8_t *)buf, size);
-
-    for (size_t i = 0; i < size; i++) {
-      int32_t s = (int32_t)(buf[i] * CHIME_GAIN);
-      if (s >  127) s =  127;
-      if (s < -128) s = -128;
-      buf[i] = (int8_t)s;
-    }
-
+  if (s_chime_enabled && s_audio_buf && !s_playing) {
+    s_playing = true;
+    speaker_set_finish_callback(prv_chime_finished, NULL);
     speaker_set_volume(100);
-    if (speaker_stream_open(SpeakerPcmFormat_8kHz_8bit, 100)) {
-      const int8_t *cursor = buf;
-      uint32_t remaining = size;
+    // 16kHz: casio.raw has most energy above 4kHz, which 8kHz sampling discards
+    // entirely (peak was 4/127 at 8kHz vs 115/127 at 16kHz).
+    // File was re-encoded: ffmpeg -i casio.ogg -ar 16000 -ac 1 -f s8 -af "volume=7.3dB"
+    if (speaker_stream_open(SpeakerPcmFormat_16kHz_8bit, 100)) {
+      const int8_t *cursor = s_audio_buf;
+      uint32_t remaining = s_audio_size;
       while (remaining > 0) {
-        uint32_t written = speaker_stream_write(cursor, remaining);
+        // Must write in chunks — passing the full 13015-byte buffer in one call
+        // causes a firmware crash (stack corruption, App fault LR:???). 8192
+        // works; the true limit is somewhere between 8192 and 13014 bytes.
+        uint32_t chunk = remaining < 8192 ? remaining : 8192;
+        uint32_t written = speaker_stream_write(cursor, chunk);
         cursor += written;
         remaining -= written;
         if (written == 0) psleep(5);
       }
       speaker_stream_close();
-      psleep((int32_t)(size / 8) + 50);
+    } else {
+      s_playing = false;
     }
-    free(buf);
   }
 }
 
 void chime_init(void) {
   prv_load_settings();
+  // Pre-load audio (~13KB) once at startup. resource_load in an event handler
+  // blocks the app task long enough to trigger "not responding" on the watch.
+  ResHandle handle = resource_get_handle(RESOURCE_ID_CHIME);
+  s_audio_size = resource_size(handle);
+  s_audio_buf = malloc(s_audio_size);
+  if (s_audio_buf) {
+    resource_load(handle, (uint8_t *)s_audio_buf, s_audio_size);
+  }
 }
 
 void chime_handle_inbox(DictionaryIterator *iter) {
@@ -143,7 +166,7 @@ void chime_handle_inbox(DictionaryIterator *iter) {
 void chime_on_tap(void) {
   if (s_chime_on_shake) {
     if (s_respect_quiet_time && quiet_time_is_active()) return;
-    prv_play_chime();
+    app_timer_register(1, prv_play_chime_timer_cb, NULL);
   }
 }
 
