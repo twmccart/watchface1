@@ -23,7 +23,8 @@ module.exports = [
       { type: 'slider', messageKey: 'QUIET_FROM',     label: 'Quiet from (hour)',    defaultValue: 22, min: 0, max: 23, step: 1 },
       { type: 'slider', messageKey: 'QUIET_TO',       label: 'Quiet to (hour)',      defaultValue: 7,  min: 0, max: 23, step: 1 },
       { type: 'toggle', messageKey: 'CHIME_ON_SHAKE',  label: 'Chime on wrist shake',           defaultValue: false },
-      { type: 'toggle', messageKey: 'CHIME_RESPECT_QT', label: 'Respect Pebble Quiet Time',  defaultValue: true  }
+      { type: 'toggle', messageKey: 'CHIME_RESPECT_QT', label: 'Respect Pebble Quiet Time',  defaultValue: true  },
+      { type: 'slider', messageKey: 'CHIME_VOLUME',     label: 'Chime volume',               defaultValue: 100, min: 0, max: 100, step: 10 }
     ]
   },
   {

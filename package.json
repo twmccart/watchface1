@@ -47,7 +47,8 @@
       "QUIET_TO",
       "WEATHER_ON_SHAKE",
       "CHIME_ON_SHAKE",
-      "CHIME_RESPECT_QT"
+      "CHIME_RESPECT_QT",
+      "CHIME_VOLUME"
     ],
     "resources": {
       "media": [

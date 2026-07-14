@@ -54,6 +54,7 @@ var KEY_QUIET_TO          = 10019;
 var KEY_WEATHER_ON_SHAKE  = 10020;
 var KEY_CHIME_ON_SHAKE    = 10021;
 var KEY_CHIME_RESPECT_QT  = 10022;
+var KEY_CHIME_VOLUME      = 10023;
 
 // Map WMO weather codes to OWM-style icon codes.
 function wmoToOwmIcon(code, isDay) {
@@ -189,6 +190,7 @@ function sendStoredSettings() {
   payload[KEY_WEATHER_ON_SHAKE] = s.WEATHER_ON_SHAKE ? 1 : 0;
   payload[KEY_CHIME_ON_SHAKE]   = s.CHIME_ON_SHAKE   ? 1 : 0;
   payload[KEY_CHIME_RESPECT_QT] = s.CHIME_RESPECT_QT ? 1 : 0;
+  payload[KEY_CHIME_VOLUME]     = s.CHIME_VOLUME     !== undefined ? parseInt(s.CHIME_VOLUME, 10) : 100;
   sendMessage(payload);
 }
 

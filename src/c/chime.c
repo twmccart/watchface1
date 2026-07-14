@@ -25,6 +25,7 @@
 #define KEY_QUIET_TO        24
 #define KEY_CHIME_ON_SHAKE  25
 #define KEY_CHIME_RESPECT_QT 26
+#define KEY_CHIME_VOLUME     27
 
 // Audio buffer pre-loaded at init so resource_load never blocks an event handler.
 // s_playing is a separate flag because s_audio_buf is always non-NULL after init.
@@ -54,6 +55,7 @@ static int  s_quiet_from;
 static int  s_quiet_to;
 static bool s_chime_on_shake;
 static bool s_respect_quiet_time;
+static int  s_volume;
 
 static void prv_load_settings(void) {
   s_chime_enabled   = persist_exists(KEY_CHIME_ENABLED)
@@ -70,6 +72,8 @@ static void prv_load_settings(void) {
       ? persist_read_bool(KEY_CHIME_ON_SHAKE) : false;
   s_respect_quiet_time = persist_exists(KEY_CHIME_RESPECT_QT)
       ? persist_read_bool(KEY_CHIME_RESPECT_QT) : true;
+  s_volume             = persist_exists(KEY_CHIME_VOLUME)
+      ? persist_read_int(KEY_CHIME_VOLUME) : 100;
 }
 
 static bool prv_in_quiet_hours(int hour) {
@@ -88,11 +92,11 @@ static void prv_play_chime(void) {
   if (s_chime_enabled && s_audio_buf && !s_playing) {
     s_playing = true;
     speaker_set_finish_callback(prv_chime_finished, NULL);
-    speaker_set_volume(100);
     // 16kHz: casio.raw has most energy above 4kHz, which 8kHz sampling discards
     // entirely (peak was 4/127 at 8kHz vs 115/127 at 16kHz).
     // File was re-encoded: ffmpeg -i casio.ogg -ar 16000 -ac 1 -f s8 -af "volume=7.3dB"
-    if (speaker_stream_open(SpeakerPcmFormat_16kHz_8bit, 100)) {
+    speaker_set_volume(s_volume);
+    if (speaker_stream_open(SpeakerPcmFormat_16kHz_8bit, s_volume)) {
       const int8_t *cursor = s_audio_buf;
       uint32_t remaining = s_audio_size;
       while (remaining > 0) {
@@ -160,6 +164,11 @@ void chime_handle_inbox(DictionaryIterator *iter) {
   if (t) {
     s_respect_quiet_time = (bool)t->value->int32;
     persist_write_bool(KEY_CHIME_RESPECT_QT, s_respect_quiet_time);
+  }
+  t = dict_find(iter, MESSAGE_KEY_CHIME_VOLUME);
+  if (t) {
+    s_volume = (int)t->value->int32;
+    persist_write_int(KEY_CHIME_VOLUME, s_volume);
   }
 }
 
