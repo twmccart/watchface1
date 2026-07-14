@@ -32,6 +32,14 @@
 static int8_t *s_audio_buf  = NULL;
 static size_t  s_audio_size = 0;
 static bool    s_playing    = false;
+static int     s_last_chime_hour = -1;
+
+// Scratch buffer for volume scaling: 8-bit source samples are widened to
+// 16-bit here so attenuation keeps its precision (scaling in the 8-bit domain
+// leaves ~7 effective bits at volume 50 and sounds gritty). 4096 samples =
+// 8192 bytes, the known-safe speaker_stream_write size.
+#define CHUNK_SAMPLES 4096
+static int16_t s_chunk[CHUNK_SAMPLES];
 
 // speaker_stream_close() drains remaining data asynchronously; this callback
 // fires when the hardware is done so we can allow the next play.
@@ -89,24 +97,35 @@ static void prv_play_chime(void) {
   if (s_vibrate_enabled) {
     vibes_short_pulse();
   }
-  if (s_chime_enabled && s_audio_buf && !s_playing) {
+  if (s_chime_enabled && s_audio_buf && s_volume > 0 && !s_playing) {
     s_playing = true;
     speaker_set_finish_callback(prv_chime_finished, NULL);
     // 16kHz: casio.raw has most energy above 4kHz, which 8kHz sampling discards
     // entirely (peak was 4/127 at 8kHz vs 115/127 at 16kHz).
     // File was re-encoded: ffmpeg -i casio.ogg -ar 16000 -ac 1 -f s8 -af "volume=7.3dB"
-    speaker_set_volume(s_volume);
-    if (speaker_stream_open(SpeakerPcmFormat_16kHz_8bit, s_volume)) {
+    //
+    // Hardware volume stays at 100; the slider is applied in software while
+    // widening to 16-bit, so low settings don't quantize the 8-bit samples.
+    // The slider is squared first: hardware volume is linear in amplitude,
+    // which makes 50 sound barely quieter than 100.
+    speaker_set_volume(100);
+    if (speaker_stream_open(SpeakerPcmFormat_16kHz_16bit, 100)) {
+      const int32_t amp = ((int32_t)s_volume * s_volume) / 100;  // 0-100
       const int8_t *cursor = s_audio_buf;
-      uint32_t remaining = s_audio_size;
+      uint32_t remaining = s_audio_size;  // in source samples (1 byte each)
       while (remaining > 0) {
-        // Must write in chunks — passing the full 13015-byte buffer in one call
-        // causes a firmware crash (stack corruption, App fault LR:???). 8192
-        // works; the true limit is somewhere between 8192 and 13014 bytes.
-        uint32_t chunk = remaining < 8192 ? remaining : 8192;
-        uint32_t written = speaker_stream_write(cursor, chunk);
-        cursor += written;
-        remaining -= written;
+        uint32_t n = remaining < CHUNK_SAMPLES ? remaining : CHUNK_SAMPLES;
+        for (uint32_t i = 0; i < n; i++) {
+          // Max magnitude: 127 * 256 * 100 / 100 = 32512, within int16_t.
+          s_chunk[i] = (int16_t)(((int32_t)cursor[i] * 256 * amp) / 100);
+        }
+        // Must write in chunks — passing a full >8192-byte buffer in one call
+        // causes a firmware crash (stack corruption, App fault LR:???).
+        uint32_t written = speaker_stream_write(s_chunk, n * 2);
+        // On a partial write the unconsumed tail is re-converted next pass.
+        // Assumes the firmware consumes whole 16-bit samples (written even).
+        cursor += written / 2;
+        remaining -= written / 2;
         if (written == 0) psleep(5);
       }
       speaker_stream_close();
