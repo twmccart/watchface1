@@ -200,8 +200,10 @@ void chime_on_tap(void) {
 
 void chime_tick(struct tm *tick_time) {
   if (tick_time->tm_min != 0) return;
+  if (tick_time->tm_hour == s_last_chime_hour) return;
   if (!s_chime_enabled && !s_vibrate_enabled) return;
   if (prv_in_quiet_hours(tick_time->tm_hour)) return;
   if (s_respect_quiet_time && quiet_time_is_active()) return;
+  s_last_chime_hour = tick_time->tm_hour;
   prv_play_chime();
 }
